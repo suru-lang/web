@@ -12,7 +12,7 @@ In a [kumu](https://github.com/suru-lang/suru#building-projects-kumu) project:
 kumu 追加 github.com/suru-lang/web
 ```
 
-HTTP (suru-lang/http) comes with it as a dependency. Suru 0.10.0 or later is needed (【道】 is a quasi-quote, and 文脈 and 道筋 are records with field types).
+HTTP (suru-lang/http) and 雛形 (suru-lang/template) come with it as dependencies. Suru 0.10.0 or later is needed (【道】 is a quasi-quote, and 文脈 and 道筋 are records with field types).
 
 ## Usage
 
@@ -51,6 +51,40 @@ Under `道群 とは 以下の【道】です`, write one `method pattern handle
 
 A line is the same as `（「GET」 と 「/品/:番号」 と 品表示すること の 道筋）`, which you may also write without 【道】.
 
+## Pages (雛形)
+
+Pages are written as [雛形](https://github.com/suru-lang/template) templates in a folder (here `画面/`).
+
+```
+「屋台」 を 読み込んで 使う
+「JSON」 を 読み込んで 使う
+
+画面 とは （「画面」 を 画面設定する） に 「配置.html」 を 配置設定する
+
+品頁 とは 題 は 文字列 で 値段 は 数 の 組
+品頁 は 【JSON】 を 導出する
+
+文脈 を 品表示する は HTTP内の応答 の 動作
+c を 品表示する とは 「品.html」 を 頁 で 画面 に 画面返答する
+ただし 頁 とは （題 は （c から 「名前」 を 道引数取得する） で 値段 は 120 の 品頁） を 品頁JSON化する
+```
+
+```
+{# 画面/配置.html #}
+<!doctype html>
+<title>{{ 題 }} - 屋台</title>
+<main>{{ 中身 を 生にする }}</main>
+
+{# 画面/品.html #}
+<h1>{{ 題 }}</h1>
+<p>{{ 値段 }}円</p>
+```
+
+- `「画面」 を 画面設定する` uses the templates in the folder 画面. For a 雛形 setting with your own filters or partials, use `設定 を 雛形画面設定する`.
+- `画面 に 「配置.html」 を 配置設定する` puts every page inside the layout 配置.html. The layout gets the page's values plus `中身` (the rendered page), and writes it with `{{ 中身 を 生にする }}`.
+- `「品.html」 を 値 で 画面 に 画面返答する` is the response action for the page with `値` (a 「JSON」 object) filled in. If the page cannot be rendered, the answer is 500 with the reason. `画面描画する` gives the rendered string as a `成否` instead.
+- A record derived with 【JSON】 (`品頁JSON化する`) is a handy way to write the values.
+
 ## Decisions
 
 1. **A handler is a function, a route is a record.** A handler takes a `文脈` and returns an action giving an `HTTP内の応答`. `道筋` is a record of the method (`道方法`), the pattern (`道型`) and the handler (`道処理`), defined with field types. There are no configuration files or marks in comments.
@@ -62,11 +96,13 @@ A line is the same as `（「GET」 と 「/品/:番号」 と 品表示する�
 7. **Static files are served by HTTP.** `「公開」 から 「/静的」 を c で 静的返答する` serves the rest of the path after `/静的` as a file under 公開, with `HTTP内の配信する`. Use it from a route like `GET /静的/* 静的配信する`. HTTP answers 403 to paths that point outside the folder.
 8. **Escape values shown in pages.** `HTML逃避する` turns `&`, `<`, `>`, `"` and `'` into character references. Use it when putting query or form values into HTML.
 9. **【道】 is `道展開する` in 屋台.** It is the quasi-quote expander (`文字列 を 道展開する は 文字列 の 成否`) and makes an expression for a list of `道筋`. The code it makes uses `道筋` without a prefix, so write `「屋台」 を 読み込んで 使う`.
+10. **Pages are 雛形 templates read from files.** `画面返答する` reads the template file on every request, so a changed page shows up without restarting. In `.html` templates, `{{ }}` is HTML-escaped (雛形's automatic escaping).
+11. **A layout is a second template.** The page is rendered first, and then the layout is rendered with the page's values plus `中身`. The layout writes `{{ 中身 を 生にする }}` so the page is not escaped twice. 雛形's own inheritance (`継承する`) can also be used inside pages.
 
 ## Tests
 
 ```sh
-kumu 試験     # routing, context, responses, middleware, 【道】 (no server)
+kumu 試験     # routing, context, responses, middleware, 【道】, pages (no server)
 kumu 点検
 ```
 
@@ -76,7 +112,6 @@ CI also builds and starts the shop in `例/` and checks its answers with curl.
 
 These are the later stages of the plan (suru-lang/web#1).
 
-- Pages: connect with [雛形](https://github.com/suru-lang/template), layouts (a shared frame)
 - Turning a JSON body back into a type derived with 【JSON】, and checking form values
 - Cookies and sessions, CSRF protection
 - Connecting with [台帳](https://github.com/suru-lang/orm): resource routes (list, show, create, update, delete) in one line
