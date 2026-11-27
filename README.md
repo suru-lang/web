@@ -217,6 +217,17 @@ A record that derives 【表】 and 【JSON】 becomes a JSON API in one line of
 18. **The first column is the primary key, taken from the path.** When creating, the body's primary key is ignored and the database chooses it. When updating, the 番号 in the path is used. PUT and PATCH both replace every column, so the body must have all the fields except the primary key.
 19. **Resource routes are not checked for CSRF by themselves.** They are a JSON API, so leave them out of `CSRF中継する`, or send the token in `X-CSRF-Token`.
 
+## API documentation
+
+The API documentation is made from the comments in `屋台.suru`: the head comment of the file and the comment right above each public definition, written in English.
+
+```sh
+kumu 文書                                                            # writes docs/api/屋台.md
+pip install -r docs/requirements.txt && sphinx-build docs docs/_build   # HTML in docs/_build
+```
+
+`docs/` and `.readthedocs.yaml` were written by `kumu 文書 --雛形` (Suru 0.11.0 or later). On every build, Read the Docs downloads kumu 0.11.0, runs `kumu 文書 --出力 docs/api` and then Sphinx, so the generated pages are not committed. The editor hover shows the same descriptions.
+
 ## Tests
 
 ```sh

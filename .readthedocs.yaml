@@ -1,0 +1,19 @@
+# Read the Docs の設定(kumu 文書 --雛形 が書いたもの)
+# ビルドのたびに kumu を取ってきて、docs/api に API のページを作ってから Sphinx を動かします。
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.12"
+  jobs:
+    pre_build:
+      - curl -sSfL https://github.com/suru-lang/suru/releases/download/v0.11.0/suru-0.11.0-linux-amd64.tar.gz | tar -xz -C /tmp
+      - /tmp/suru-0.11.0-linux-amd64/kumu 文書 --出力 docs/api
+
+sphinx:
+  configuration: docs/conf.py
+
+python:
+  install:
+    - requirements: docs/requirements.txt

@@ -217,6 +217,17 @@ v を 回数にする とは 0
 18. **主鍵は最初の列で、道から取る。** 作るときは本文の主鍵を使わず、DB が決めます。直すときは道の番号を使います。PUT も PATCH も全部の列を置き換えるので、本文には主鍵のほかの欄を全部書きます。
 19. **資源の道は自分では CSRF を確かめない。** JSON の API なので、`CSRF中継する` から外すか、札を `X-CSRF-Token` で送ります。
 
+## API ドキュメント
+
+API ドキュメントは `屋台.suru` の注釈から作ります。ファイルの頭の注釈と、公開の定義のすぐ上の注釈で、英語で書いています。
+
+```sh
+kumu 文書                                                            # docs/api/屋台.md を書く
+pip install -r docs/requirements.txt && sphinx-build docs docs/_build   # docs/_build に HTML
+```
+
+`docs/` と `.readthedocs.yaml` は `kumu 文書 --雛形`(する 0.11.0 以上)で書きました。Read the Docs はビルドのたびに kumu 0.11.0 を取ってきて `kumu 文書 --出力 docs/api` を動かしてから Sphinx を動かすので、作ったページはコミットしません。エディタのホバーにも同じ説明が出ます。
+
 ## 試験
 
 ```sh
