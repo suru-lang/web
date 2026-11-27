@@ -1,4 +1,4 @@
-# kumu 試験 と kumu 点検(屋台と例)を Linux と macOS で動かし、例の店を起動して答えるか確かめます
+# kumu 試験 と kumu 点検(屋台・結合試験・例)を Linux と macOS で動かし、例の店を起動して答えるか確かめます
 name: 試験
 
 on:
@@ -20,15 +20,26 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: stable
-      - name: clang を入れる
+      - name: clang と SQLite を入れる(Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y clang
+        run: sudo apt-get update && sudo apt-get install -y clang libsqlite3-dev pkg-config
+      - name: SQLite を入れる(macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install sqlite pkg-config
+          echo "PKG_CONFIG_PATH=$(brew --prefix sqlite)/lib/pkgconfig" >> "$GITHUB_ENV"
       - name: kumu を入れる
         # GOPROXY=direct: プロキシが古い main を返さないように、GitHub から直接取る
         run: GOPROXY=direct go install github.com/suru-lang/suru/cmd/kumu@main
       - name: 試験
         run: ~/go/bin/kumu 試験
       - name: 点検
+        run: ~/go/bin/kumu 点検
+      - name: 結合試験(資源の道を本物の SQLite で)
+        working-directory: 結合試験
+        run: ~/go/bin/kumu 試験
+      - name: 結合試験の点検
+        working-directory: 結合試験
         run: ~/go/bin/kumu 点検
       - name: 例の点検
         working-directory: 例
