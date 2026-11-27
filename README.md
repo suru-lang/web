@@ -12,7 +12,7 @@ In a [kumu](https://github.com/suru-lang/suru#building-projects-kumu) project:
 kumu 追加 github.com/suru-lang/web
 ```
 
-HTTP (suru-lang/http) and 雛形 (suru-lang/template) come with it as dependencies. Suru 0.11.0 or later is needed (【道】 is a quasi-quote, 文脈 and 道筋 are records with field types, and sessions are signed with HMAC-SHA256 from 「ハッシュ」).
+HTTP (suru-lang/http), 雛形 (suru-lang/template) and 台帳 (suru-lang/orm) come with it as dependencies. Suru 0.11.0 or later is needed (【道】 is a quasi-quote, 文脈 and 道筋 are records with field types, and sessions are signed with HMAC-SHA256 from 「ハッシュ」).
 
 ## Usage
 
@@ -140,6 +140,38 @@ v を 回数にする とは 0
 - `「…」 を セッション設定する` makes the setting for sessions. `c を 秘密 で セッション取得する` gives the session (a JSON object; an empty object if there is none or the signature does not match), and `応答の動作 に 値 を 秘密 で セッション保存する` signs the value and sets it as a cookie.
 - `（秘密 で CSRF中継すること）` is middleware. A GET gets a token in the cookie 屋台札, and `c を CSRF札取得する` gives it to put in forms as `<input type="hidden" name="_札" value="{{ 札 }}">`. A POST, PUT, PATCH or DELETE whose `_札` (or `X-CSRF-Token` header) does not match the cookie gets 403.
 
+## Resource routes (台帳)
+
+A record that derives 【表】 and 【JSON】 becomes a JSON API in one line of 【道】. 台帳 is [suru-lang/orm](https://github.com/suru-lang/orm). The database driver (here SQLite) is added to your own project.
+
+```
+「屋台」 を 読み込んで 使う
+「JSON」 を 読み込んで 使う
+「蔵」 を 読み込んで 使う
+「台帳」 を 読み込んで 使う
+「SQLite」 を 読み込んで 使う
+
+会員 とは 番号 は 数 で 名前 は 文字列 で 年齢 は 数 の 組
+
+会員 は 【表】 と 【JSON】 を 導出する
+
+帳場接続する は DB接続 の 動作
+帳場接続する とは 「店.db」 を SQLite駆動 で DB開封する
+
+道群 とは 以下の【道】です
+  資源 /会員  会員 帳場接続する
+以上です
+```
+
+- `資源 道 組の名前 接続の名前` gives six routes:
+  - `GET /会員` lists the records as a JSON array. `?開始=20&上限=10` picks part of the list.
+  - `POST /会員` creates a record from the JSON body and answers 201 with the record and `Location: /会員/番号`.
+  - `GET /会員/:番号` shows one record.
+  - `PUT /会員/:番号` and `PATCH /会員/:番号` update a record from the JSON body.
+  - `DELETE /会員/:番号` deletes a record and answers 204.
+- A missing record or a 番号 that is not an integer of 1 or more gives 404, and a body that cannot be read or does not fit the type gives 400.
+- Without 【道】, write `「/会員」 を （資表 は 会員表 で 資化 は 会員JSON化すること で 資戻 は 会員JSON復元すること で 資開 は （帳場接続する） の 資源） で 資源道群にする`. It gives a list of `道筋`, which can be joined with other routes using `+`.
+
 ## Decisions
 
 1. **A handler is a function, a route is a record.** A handler takes a `文脈` and returns an action giving an `HTTP内の応答`. `道筋` is a record of the method (`道方法`), the pattern (`道型`) and the handler (`道処理`), defined with field types. There are no configuration files or marks in comments.
@@ -158,12 +190,16 @@ v を 回数にする とは 0
 14. **Sessions live in a signed cookie.** The server keeps nothing: the session is the JSON object in Base64, a `.`, and its HMAC-SHA256 in hexadecimal, in the cookie 屋台. Anyone can read it, but changing it breaks the signature, so don't put secrets in it. Cookies are limited to about 4 KB. Changing the key logs everyone out.
 15. **CSRF uses a signed double-submit token.** The token is 16 random bytes from the OS with its signature. It is set as a cookie (not HttpOnly) and must come back in the form or the `X-CSRF-Token` header. GET, HEAD and OPTIONS are not checked, so they should not change anything. Routes such as JSON APIs that don't use cookies can be left out of the middleware.
 16. **Signatures are compared in constant time.** Every byte is compared before answering, so timing does not show where a forged signature went wrong.
+17. **A resource opens a connection per request.** `資開` is the action that opens a `DB接続`. Each request runs it, uses the connection and closes it, so the database can be changed while the server runs, and requests in different threads don't share a connection.
+18. **The first column is the primary key, taken from the path.** When creating, the body's primary key is ignored and the database chooses it. When updating, the 番号 in the path is used. PUT and PATCH both replace every column, so the body must have all the fields except the primary key.
+19. **Resource routes are not checked for CSRF by themselves.** They are a JSON API, so leave them out of `CSRF中継する`, or send the token in `X-CSRF-Token`.
 
 ## Tests
 
 ```sh
 kumu 試験     # routing, context, responses, middleware, 【道】, pages, JSON bodies, forms, cookies, sessions, CSRF (no server)
 kumu 点検
+cd 結合試験 && kumu 試験   # resource routes with a real SQLite database (needs SQLite)
 ```
 
 CI also builds and starts the shop in `例/` and checks its answers with curl.
@@ -172,7 +208,6 @@ CI also builds and starts the shop in `例/` and checks its answers with curl.
 
 These are the later stages of the plan (suru-lang/web#1).
 
-- Connecting with [台帳](https://github.com/suru-lang/orm): resource routes (list, show, create, update, delete) in one line
 - A project template for `kumu 新規 --対象 web`
 
 ## License
