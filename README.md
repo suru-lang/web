@@ -85,6 +85,40 @@ c を 品表示する とは 「品.html」 を 頁 で 画面 に 画面返答�
 - `「品.html」 を 値 で 画面 に 画面返答する` is the response action for the page with `値` (a 「JSON」 object) filled in. If the page cannot be rendered, the answer is 500 with the reason. `画面描画する` gives the rendered string as a `成否` instead.
 - A record derived with 【JSON】 (`品頁JSON化する`) is a handy way to write the values.
 
+## JSON bodies and forms
+
+A JSON body can be turned straight into a type derived with 【JSON】.
+
+```
+注文 とは 品 は 文字列 で 数 は 数 の 組
+注文 は 【JSON】 を 導出する
+
+文脈 を 注文受付する は HTTP内の応答 の 動作
+c を 注文受付する とは （c を 注文JSON復元すること で JSON本文復元する） を 注文返答すること で 成功時返答する
+
+注文 を 注文返答する は HTTP内の応答 の 動作
+o を 注文返答する とは （o を 注文JSON化する） を JSON返答する
+```
+
+- `c を JSON本文解析する` gives the body's JSON as a `成否`. `c を 会員JSON復元すること で JSON本文復元する` turns it into the derived type.
+- `r を 処理 で 成功時返答する` passes the value of a `成功` to the handler, and answers a `失敗` with 400 and the reason (for example `数が数ではありません`).
+
+Form values are checked with rules (`書式規則`).
+
+```
+規則群 とは （「品」 を 必須検査する） と （「数」 を 1 から 9 へ 範囲検査する） と （「備考」 を 200 で 最長検査する）
+
+文脈 を 書式受付する は HTTP内の応答 の 動作
+c を 書式受付する とは
+  もし 誤り群 = 空 ならば 「/ありがとう」 へ 転送返答する
+  そうでなければ 422 と 「品.html」 を （誤り群 を 誤りJSONにする） で 画面 に 画面状態返答する
+ただし 誤り群 とは c を 規則群 で 書式検査する
+```
+
+- The rules are `必須検査する` (not empty), `数検査する` (a number), `範囲検査する` (a number from … to …), `最長検査する` (at most n characters) and `選択検査する` (one of a list).
+- `c を 規則群 で 書式検査する` gives the list of `書式誤り` (field `誤欄` and message `誤文`). An empty list means no errors.
+- `誤り群 を 誤りJSONにする` gives a JSON object with the first message for each field, to pass to a page (`{% もし 数 ならば %}{{ 数 }}{% 以上 %}`). `画面状態返答する` answers the page with a status such as 422.
+
 ## Decisions
 
 1. **A handler is a function, a route is a record.** A handler takes a `文脈` and returns an action giving an `HTTP内の応答`. `道筋` is a record of the method (`道方法`), the pattern (`道型`) and the handler (`道処理`), defined with field types. There are no configuration files or marks in comments.
@@ -98,11 +132,13 @@ c を 品表示する とは 「品.html」 を 頁 で 画面 に 画面返答�
 9. **【道】 is `道展開する` in 屋台.** It is the quasi-quote expander (`文字列 を 道展開する は 文字列 の 成否`) and makes an expression for a list of `道筋`. The code it makes uses `道筋` without a prefix, so write `「屋台」 を 読み込んで 使う`.
 10. **Pages are 雛形 templates read from files.** `画面返答する` reads the template file on every request, so a changed page shows up without restarting. In `.html` templates, `{{ }}` is HTML-escaped (雛形's automatic escaping).
 11. **A layout is a second template.** The page is rendered first, and then the layout is rendered with the page's values plus `中身`. The layout writes `{{ 中身 を 生にする }}` so the page is not escaped twice. 雛形's own inheritance (`継承する`) can also be used inside pages.
+12. **A bad JSON body is the client's error.** `成功時返答する` answers a body that cannot be read or does not fit the type with 400 and the reason from 【JSON】's restore function. The Content-Type is not checked.
+13. **Form rules are values.** A rule is a `書式規則` record (field name, whether it is required, and a function from the value to a message, `「」` when fine). Rules other than `必須検査する` skip an empty value, so an optional field can still have rules. Messages are in Japanese and name the field.
 
 ## Tests
 
 ```sh
-kumu 試験     # routing, context, responses, middleware, 【道】, pages (no server)
+kumu 試験     # routing, context, responses, middleware, 【道】, pages, JSON bodies, forms (no server)
 kumu 点検
 ```
 
@@ -112,7 +148,6 @@ CI also builds and starts the shop in `例/` and checks its answers with curl.
 
 These are the later stages of the plan (suru-lang/web#1).
 
-- Turning a JSON body back into a type derived with 【JSON】, and checking form values
 - Cookies and sessions, CSRF protection
 - Connecting with [台帳](https://github.com/suru-lang/orm): resource routes (list, show, create, update, delete) in one line
 - A project template for `kumu 新規 --対象 web`
