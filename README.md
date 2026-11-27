@@ -14,6 +14,24 @@ kumu 追加 github.com/suru-lang/web
 
 HTTP (suru-lang/http), 雛形 (suru-lang/template) and 台帳 (suru-lang/orm) come with it as dependencies. Suru 0.11.0 or later is needed (【道】 is a quasi-quote, 文脈 and 道筋 are records with field types, and sessions are signed with HMAC-SHA256 from 「ハッシュ」).
 
+## Starting a project
+
+`kumu 新規 店 --対象 web` (Suru 0.11.0 or later) creates a web app with everything in place:
+
+```
+店/
+  組.suru          depends on github.com/suru-lang/web
+  本体.suru        opens the server on port 8080
+  店.suru          routes (【道】) and handlers
+  画面/            templates: 配置.html (the layout) and トップ.html
+  公開/            static files (見た目.css)
+  試験/道.suru     tests of the routes, without a server
+```
+
+- **Develop.** `kumu 実行` builds and runs the app; open http://localhost:8080/. Pages are read from `画面/` on every request, so changes to templates show up without restarting. To skip compiling, run it with the interpreter: `kumu 取得` once, then `suru 本体.suru`.
+- **Test.** `kumu 試験` runs `試験/道.suru`, which sends requests straight to `道群` with `振分する`. `kumu 点検` lints the project.
+- **Ship.** `kumu 作る` makes the binary `出力/店`. It reads `画面/` and `公開/` from the folder it runs in, so copy those folders next to it and start it there.
+
 ## Usage
 
 ```
@@ -208,7 +226,7 @@ CI also builds and starts the shop in `例/` and checks its answers with curl.
 
 These are the later stages of the plan (suru-lang/web#1).
 
-- A project template for `kumu 新規 --対象 web`
+- Docs, a larger example and the v0.1.0 release
 
 ## License
 
