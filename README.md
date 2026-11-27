@@ -12,7 +12,7 @@ In a [kumu](https://github.com/suru-lang/suru#building-projects-kumu) project:
 kumu 追加 github.com/suru-lang/web
 ```
 
-HTTP (suru-lang/http) and 雛形 (suru-lang/template) come with it as dependencies. Suru 0.10.0 or later is needed (【道】 is a quasi-quote, and 文脈 and 道筋 are records with field types).
+HTTP (suru-lang/http) and 雛形 (suru-lang/template) come with it as dependencies. Suru 0.11.0 or later is needed (【道】 is a quasi-quote, 文脈 and 道筋 are records with field types, and sessions are signed with HMAC-SHA256 from 「ハッシュ」).
 
 ## Usage
 
@@ -119,6 +119,27 @@ c を 書式受付する とは
 - `c を 規則群 で 書式検査する` gives the list of `書式誤り` (field `誤欄` and message `誤文`). An empty list means no errors.
 - `誤り群 を 誤りJSONにする` gives a JSON object with the first message for each field, to pass to a page (`{% もし 数 ならば %}{{ 数 }}{% 以上 %}`). `画面状態返答する` answers the page with a status such as 422.
 
+## Cookies, sessions and CSRF
+
+```
+秘密 とは 「長くて秘密の文字列です。リポジトリには入れません」 を セッション設定する
+
+文脈 を 回数表示する は HTTP内の応答 の 動作
+c を 回数表示する とは （「回数: 」 + （n を 文字列化する） を 文字返答する） に 新値 を 秘密 で セッション保存する
+ただし n とは （（c を 秘密 で セッション取得する） から 「回数」 を JSON取得する） を 回数にする
+ただし 新値 とは （（「回数」 と （n + 1 の JSON数） の JSON項目） を 空 に 挿入する） の JSON物
+
+JSON を 回数にする は 数
+（n の JSON数） を 回数にする とは n
+v を 回数にする とは 0
+
+8080 を （道群 を （秘密 で CSRF中継すること） で 中継付けする） で 屋台開店する
+```
+
+- `c から 「名」 を クッキー取得する` reads a cookie. `応答の動作 に 「名」 と 値 を クッキー付けする` adds a `Set-Cookie` (`Path=/; HttpOnly; SameSite=Lax`), `クッキー属性付けする` takes your own attributes, and `クッキー消去する` removes one.
+- `「…」 を セッション設定する` makes the setting for sessions. `c を 秘密 で セッション取得する` gives the session (a JSON object; an empty object if there is none or the signature does not match), and `応答の動作 に 値 を 秘密 で セッション保存する` signs the value and sets it as a cookie.
+- `（秘密 で CSRF中継すること）` is middleware. A GET gets a token in the cookie 屋台札, and `c を CSRF札取得する` gives it to put in forms as `<input type="hidden" name="_札" value="{{ 札 }}">`. A POST, PUT, PATCH or DELETE whose `_札` (or `X-CSRF-Token` header) does not match the cookie gets 403.
+
 ## Decisions
 
 1. **A handler is a function, a route is a record.** A handler takes a `文脈` and returns an action giving an `HTTP内の応答`. `道筋` is a record of the method (`道方法`), the pattern (`道型`) and the handler (`道処理`), defined with field types. There are no configuration files or marks in comments.
@@ -134,11 +155,14 @@ c を 書式受付する とは
 11. **A layout is a second template.** The page is rendered first, and then the layout is rendered with the page's values plus `中身`. The layout writes `{{ 中身 を 生にする }}` so the page is not escaped twice. 雛形's own inheritance (`継承する`) can also be used inside pages.
 12. **A bad JSON body is the client's error.** `成功時返答する` answers a body that cannot be read or does not fit the type with 400 and the reason from 【JSON】's restore function. The Content-Type is not checked.
 13. **Form rules are values.** A rule is a `書式規則` record (field name, whether it is required, and a function from the value to a message, `「」` when fine). Rules other than `必須検査する` skip an empty value, so an optional field can still have rules. Messages are in Japanese and name the field.
+14. **Sessions live in a signed cookie.** The server keeps nothing: the session is the JSON object in Base64, a `.`, and its HMAC-SHA256 in hexadecimal, in the cookie 屋台. Anyone can read it, but changing it breaks the signature, so don't put secrets in it. Cookies are limited to about 4 KB. Changing the key logs everyone out.
+15. **CSRF uses a signed double-submit token.** The token is 16 random bytes from the OS with its signature. It is set as a cookie (not HttpOnly) and must come back in the form or the `X-CSRF-Token` header. GET, HEAD and OPTIONS are not checked, so they should not change anything. Routes such as JSON APIs that don't use cookies can be left out of the middleware.
+16. **Signatures are compared in constant time.** Every byte is compared before answering, so timing does not show where a forged signature went wrong.
 
 ## Tests
 
 ```sh
-kumu 試験     # routing, context, responses, middleware, 【道】, pages, JSON bodies, forms (no server)
+kumu 試験     # routing, context, responses, middleware, 【道】, pages, JSON bodies, forms, cookies, sessions, CSRF (no server)
 kumu 点検
 ```
 
@@ -148,7 +172,6 @@ CI also builds and starts the shop in `例/` and checks its answers with curl.
 
 These are the later stages of the plan (suru-lang/web#1).
 
-- Cookies and sessions, CSRF protection
 - Connecting with [台帳](https://github.com/suru-lang/orm): resource routes (list, show, create, update, delete) in one line
 - A project template for `kumu 新規 --対象 web`
 
