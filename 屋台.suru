@@ -1,75 +1,28 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 sugarsweetrobotics(LICENSE)
-# 「する」のウェブフレームワーク「屋台」(suru-lang/http の上で、道ごとに処理を振り分けます)
-# kumu 追加 github.com/suru-lang/web で足し、使うファイルに 「屋台」 を 読み込んで 使う と書きます。
-# 応答の型は HTTP内の応答 なので、HTTP の関数も使うなら 「HTTP」 を 読み込む も書きます。
+# 「屋台」, the web framework of Suru. On top of suru-lang/http, it sends each request to the handler of its route.
+# Add it with `kumu 追加 github.com/suru-lang/web` and write `「屋台」 を 読み込んで 使う` in your file.
+# The response type is `HTTP内の応答`, so also write `「HTTP」 を 読み込む` when you use the functions of HTTP.
 #
-# 処理は、文脈 を受け取って応答の動作を返す関数です:
-#   文脈 を 会員表示する は HTTP内の応答 の 動作
-#   c を 会員表示する とは 「会員 」 + （c から 「番号」 を 道引数取得する） を 文字返答する
+# A handler is a function that takes a `文脈` and gives the action of a response:
 #
-# 道は、方法・道の型・処理の 道筋 です。【道】で1行に1つずつ書けます(README の「使い方」):
-#   「道群 とは 以下の【道】です」の行の下に、字下げして「GET /会員/:番号 会員表示する」のような行を並べ、「以上です」で閉じる
-#   1行は （「GET」 と 「/会員/:番号」 と 会員表示すること の 道筋） と同じです
-#   道の型の「:名前」は1つの部品に合い、道引数取得する で取れます。最後の「*」は残りの全部に合います(引数の名前は「*」)。
+# ```suru
+# 文脈 を 会員表示する は HTTP内の応答 の 動作
+# c を 会員表示する とは 「会員 」 + （c から 「番号」 を 道引数取得する） を 文字返答する
+# ```
 #
-#   8080 を 道群 で 屋台開店する        … 8080 番で待ち受けて、要求ごとに合う道の処理を呼ぶ(並行に答えます)
-#   道群 で 要求 を 振分する            … 要求に合う処理の応答の動作(合う道がなければ 404、方法だけ違えば 405)
-#   道群 を 中継 で 中継付けする        … どの処理も 中継 で包む(中継 は 処理 を受け取って処理を返す関数)
-#   処理 を 記録中継する               … 「GET /会員/1 200」を表示する中継
+# A route is a `道筋` of the method, the path pattern and the handler. With 【道】, write one route per line (see "Usage" in the README): under the line `道群 とは 以下の【道】です`, write indented lines like `GET /会員/:番号 会員表示する`, and close with `以上です`. One line is the same as `（「GET」 と 「/会員/:番号」 と 会員表示すること の 道筋）`.
+# A 「:名前」 in the path pattern matches one segment, and `道引数取得する` reads it. A 「*」 at the end matches all the rest (its name is 「*」).
 #
-# 文脈から取る:
-#   c から 「番号」 を 道引数取得する   … 道の型の「:番号」に合った部品(%XX は戻したもの。なければ「」)
-#   c から 「q」 を 問い取得する      … 道の ? の後ろの q=…(+ は空白、%XX は戻す。なければ「」)
-#   c から 「名前」 を 書式取得する    … 本文(application/x-www-form-urlencoded)の 名前=…(なければ「」)
-#   c を 方法にする・c を 道にする   … 要求の方法と、? の前の道
+# `8080 を 道群 で 屋台開店する` listens on port 8080 and calls the handler of the matching route for each request, answering in parallel.
 #
-# 応答の動作を作る:
-#   s を 文字返答する・s を HTML返答する・v を JSON返答する(「JSON」 の JSON)
-#   404 で s を 状態返答する・「/会員」 へ 転送返答する(303 See Other。書式を受けた後に使う。ASCII でない字は %XX にする)
-#   「public」 から 「/静的」 を c で 静的返答する … 道の「/静的」より後ろを public の下のファイルとして返す(HTTP内の配信する)
-#   s を 道符号化する … ASCII でない字・空白を %XX にした道
-#   s を HTML逃避する … & < > " ' を文字参照にした文字列(要求から来た値を HTML に入れるときに)
+# **Pages.** `画面設定する` uses the templates of 「雛形」 in a folder (.html templates escape `{{ }}`). `画面返答する` answers with a page with values put in, and `配置設定する` puts every page in a layout.
 #
-# 画面(雛形のテンプレートで HTML を作る):
-#   画面 とは 「画面」 を 画面設定する   … フォルダ 画面 のテンプレートを使う(.html は {{ }} を逃がします)
-#   画面 とは 画面 に 「配置.html」 を 配置設定する … どの頁も 配置.html の枠に入れる(枠では {{ 中身 を 生にする }} に頁が入ります)
-#   「品書き.html」 を 値 で 画面 に 画面返答する … 値(「JSON」 の JSON)を差し込んだ頁の応答の動作(描けなければ 500)
-#   「品書き.html」 を 値 で 画面 に 画面描画する … 描いた文字列の 成功 か 理由の 失敗 を返す動作
-#   422 と 「品.html」 を 値 で 画面 に 画面状態返答する … 状態を決めて答える(書式の誤りを見せるときなど)
+# **Forms and JSON.** `書式取得する` reads a form field, `書式検査する` checks the fields with rules such as `必須検査する`, and `JSON本文復元する` turns a JSON body into a type derived with 【JSON】.
 #
-# 本文の JSON:
-#   c を 本文文字列にする       … 要求の本文(UTF-8 の文字列)
-#   c を JSON本文解析する       … 本文の JSON の 成功 か 理由の 失敗
-#   c を 会員JSON復元すること で JSON本文復元する … 【JSON】で導出した型に戻した 成功 か 理由の 失敗
-#   r を 処理 で 成功時返答する … r が 成功 なら中身を 処理 に渡し、失敗 なら理由を付けて 400 で答える
+# **Cookies, sessions and CSRF.** Sessions put a JSON object in a signed cookie and keep nothing on the server. `CSRF中継する` refuses a POST and so on whose token does not match, with 403. JSON APIs send the token in the header X-CSRF-Token.
 #
-# 書式の値を確かめる(規則は 書式規則。確かめた結果は 書式誤り のリスト):
-#   「品」 を 必須検査する・「数」 を 数検査する・「数」 を 1 から 10 へ 範囲検査する
-#   「備考」 を 200 で 最長検査する・「色」 を （「赤」 と 「青」） で 選択検査する
-#   c を 規則群 で 書式検査する … 書式の値を規則で確かめた 書式誤り のリスト(空なら誤りなし。必須検査 のほかは、空の値を確かめません)
-#   誤り群 を 誤りJSONにする    … 欄の名前ごとに最初の誤りの文を書いた JSON の物(画面に渡すときに)
-#
-# クッキー:
-#   c から 「名」 を クッキー取得する … 要求のクッキーの値(%XX は戻す。なければ「」)
-#   応答の動作 に 「名」 と 値 を クッキー付けする … Set-Cookie を足した動作(Path=/; HttpOnly; SameSite=Lax)
-#   応答の動作 に 「名」 と 値 を 「Path=/; Max-Age=60」 で クッキー属性付けする … 属性を自分で書く
-#   応答の動作 に 「名」 を クッキー消去する … クッキーを消す Set-Cookie を足した動作
-#
-# セッション(署名したクッキーに JSON の物を入れる。サーバーには何も残しません):
-#   設定 とは 「長くて秘密の文字列」 を セッション設定する … 署名の鍵(32 字以上に。漏れたら変える)
-#   c を 設定 で セッション取得する   … クッキーの JSON の物(ない・署名が合わなければ空の物)
-#   応答の動作 に 値 を 設定 で セッション保存する … 値(JSON の物)を署名してクッキーに入れた動作
-#
-# CSRF(書式を他のサイトから送らせない):
-#   道群 を （設定 で CSRF中継すること） で 中継付けする … POST などは札が合わなければ 403
-#   c を CSRF札取得する … 書式に <input type="hidden" name="_札" value="…"> として入れる札
-#   (JSON の API は札を見出し X-CSRF-Token に入れて送ります)
-#
-# 台帳の資源(【表】と【JSON】を導出した組の JSON の API):
-#   「/会員」 を （資表 は 会員表 で 資化 は 会員JSON化すること で 資戻 は 会員JSON復元すること で 資開 は （帳場接続する） の 資源） で 資源道群にする
-#   … GET /会員(一覧)・POST /会員(作成)・GET・PUT・PATCH・DELETE /会員/:番号 の6つの道。資開 は要求ごとに DB接続 を開く動作
-#   【道】では「資源 /会員 会員 帳場接続する」の1行で書けます
+# **Resources.** `資源道群にする` makes the six routes of a JSON API for a record type with 【表】 and 【JSON】 derived: GET /会員 (list), POST /会員 (create), and GET, PUT, PATCH and DELETE /会員/:番号. In 【道】 it is one line: `資源 /会員 会員 帳場接続する`.
 
 「標準」 を 読み込んで 使う
 「HTTP」 を 読み込む
@@ -80,26 +33,34 @@
 「蔵」 を 読み込む
 「台帳」 を 読み込む
 
+# What a handler gets: the request (`元要求`) and the values of the path parameters (`道引数`).
 文脈 とは 元要求 は HTTP内の要求 で 道引数 は （文字列 の リスト） の リスト の 組
+# A route: the method, the path pattern and the handler.
 道筋 とは 道方法 は 文字列 で 道型 は 文字列 で 道処理 は （文脈 を 受け取って HTTP内の応答 の 動作 を 返すこと） の 組
 
 # --- 応答の動作を作る ---
 
+# A 200 response with the text s (text/plain).
 文字列 を 文字返答する は HTTP内の応答 の 動作
 s を 文字返答する とは s を HTTP内の本文応答して 結果にする
 
+# A 200 response with the HTML s.
 文字列 を HTML返答する は HTTP内の応答 の 動作
 s を HTML返答する とは s を HTTP内のHTML応答して 結果にする
 
+# A 200 response with the JSON v (application/json).
 JSON内のJSON を JSON返答する は HTTP内の応答 の 動作
 v を JSON返答する とは （（v を JSON内のJSON文字列にして バイト列にする） を 「application/json; charset=utf-8」 で HTTP内の種類付応答する） を 結果にする
 
+# A response with the status n and the text s.
 数 で 文字列 を 状態返答する は HTTP内の応答 の 動作
 n で s を 状態返答する とは （n で s を HTTP内の状態応答する） を 結果にする
 
+# A 303 See Other response to 行先, to use after receiving a form. Characters that are not ASCII are percent-encoded.
 文字列 へ 転送返答する は HTTP内の応答 の 動作
 行先 へ 転送返答する とは （（303 で 「See Other」 を HTTP内の状態応答する） に 「Location」 と （行先 を 道符号化する） を HTTP内の見出し追加する） を 結果にする
 
+# Serves the part of the path after `前置き` as a file under the folder 置場 (with `HTTP内の配信する`).
 文字列 から 文字列 を 文脈 で 静的返答する は HTTP内の応答 の 動作
 置場 から 前置き を c で 静的返答する とは
   元 とは c の 元要求
@@ -108,11 +69,11 @@ n で s を 状態返答する とは （n で s を HTTP内の状態応答す�
   末尾 とは もし 生道 が 「/」 で 末尾一致である かつ 残り ≠ 「」 ならば 「/」 そうでなければ 「」
   置場 を （（元 の 方法） と （「/」 + 残り + 末尾） と （元 の 見出し） と （元 の 本文） の HTTP内の要求） で HTTP内の配信する
 
-# HTML に入れる文字列の & < > " ' を文字参照にする(要求から来た値を画面に出すときに使う)
+# s with 「&」, 「<」, 「>」, 「"」 and 「'」 turned into character references. Use it to put values from a request into HTML.
 文字列 を HTML逃避する は 文字列
 s を HTML逃避する とは （（（（s を 「&」 から 「&amp;」 へ 置換する） を 「<」 から 「&lt;」 へ 置換する） を 「>」 から 「&gt;」 へ 置換する） を 「"」 から 「&quot;」 へ 置換する） を 「'」 から 「&#39;」 へ 置換する
 
-# 道の ASCII でない字・空白・制御字を %XX にする(ほかの字はそのまま)
+# s with characters that are not ASCII, spaces and control characters turned into %XX (the others stay as they are).
 文字列 を 道符号化する は 文字列
 s を 道符号化する とは （（s を バイト列にして 数列にする） を 字節符号化すること で 写像する） を 「」 で 結合する
 
@@ -124,9 +85,11 @@ d を 十六進字にする とは もし d < 10 ならば d + 48 を 文字に�
 
 # --- 文脈から取る ---
 
+# The method of the request.
 文脈 を 方法にする は 文字列
 c を 方法にする とは c の 元要求 の 方法
 
+# The path of the request, before 「?」.
 文脈 を 道にする は 文字列
 c を 道にする とは c の 元要求 の 道 を HTTP内の道部分にする
 
@@ -134,12 +97,15 @@ c を 道にする とは c の 元要求 の 道 を HTTP内の道部分にす�
 空 から 名 を 対取得する とは 「」
 （先頭 は 対 で 残り は 他） から 名 を 対取得する とは もし 対 の 先頭 = 名 ならば 対 の 残り の 先頭 そうでなければ 他 から 名 を 対取得する
 
+# The path segment that matched 「:名」 in the route (%XX decoded; 「」 when there is none).
 文脈 から 文字列 を 道引数取得する は 文字列
 c から 名 を 道引数取得する とは c の 道引数 から 名 を 対取得する
 
+# The value of 名 after 「?」 in the path (「+」 is a space and %XX is decoded; 「」 when there is none).
 文脈 から 文字列 を 問い取得する は 文字列
 c から 名 を 問い取得する とは （（c の 元要求 の 道） を 問い部分にして 対群にする） から 名 を 対取得する
 
+# The value of 名 in the form body (application/x-www-form-urlencoded; 「」 when there is none).
 文脈 から 文字列 を 書式取得する は 文字列
 c から 名 を 書式取得する とは （c の 元要求 の 本文 を 対群にする） から 名 を 対取得する
 
@@ -193,6 +159,7 @@ s を 部品群にする とは （s を 「/」 で 分割する） から （x
 文字列 が 文字列 に 方法一致である は 真偽
 m が 道方法 に 方法一致である とは m = 道方法 または （m = 「HEAD」 かつ 道方法 = 「GET」）
 
+# The response of the handler whose route matches the request. 404 when no path matches, 405 when only the method differs.
 道筋 の リスト で HTTP内の要求 を 振分する は HTTP内の応答 の 動作
 道群 で 要求 を 振分する とは
   生部品 とは （要求 の 道 を HTTP内の道部分にする） を 部品群にする
@@ -223,12 +190,15 @@ r で 要求 を 部品 に 道実行する とは （r の 道処理） を （
 
 # --- 開店する・中継 ---
 
+# Listens at 先 (a port, or 「host:port」) and answers each request with the matching route, in parallel.
 丙 を 道筋 の リスト で 屋台開店する は 甲 の 動作
 先 を 道群 で 屋台開店する とは 先 を （道群 で 振分すること） で HTTP内の動作並行待受する
 
+# The routes with every handler wrapped by 中継 (a function that takes a handler and gives a handler).
 道筋 の リスト を （（文脈 を 受け取って HTTP内の応答 の 動作 を 返すこと） を 受け取って （文脈 を 受け取って HTTP内の応答 の 動作 を 返すこと） を 返すこと） で 中継付けする は 道筋 の リスト
 道群 を 中継 で 中継付けする とは 道群 を （r を 受け取って 道処理 は （中継 を （r の 道処理） に 適用する） の r を 返すこと） で 写像する
 
+# A wrapper that prints a line like 「GET /会員/1 200」 for each request.
 （文脈 を 受け取って HTTP内の応答 の 動作 を 返すこと） を 記録中継する は （文脈 を 受け取って HTTP内の応答 の 動作 を 返すこと）
 処理 を 記録中継する とは 処理 を 記録実行すること
 
@@ -241,6 +211,7 @@ r で 要求 を 部品 に 道実行する とは （r の 道処理） を （
 
 # --- 【道】: 1行に「方法 道の型 処理の名前」を書いて、道筋 のリストにする ---
 
+# The expander behind 【道】: it turns lines of 「方法 道の型 処理の名前」 into the Suru code of a list of `道筋`.
 文字列 を 道展開する は （文字列 と 文字列） の 成否
 本文 を 道展開する とは
   行群 とは 本文 を 改行 で 分割する
@@ -307,18 +278,22 @@ x を 道部分式にする とは もし x が 資印 で 先頭一致である
 
 # --- 画面(雛形) ---
 
+# Pages: the settings of 「雛形」 and the layout template (「」 for none).
 画面 とは 画雛 は 雛形内の雛設定 で 画配置 は 文字列 の 組
 
+# Pages that use the templates in the folder 場所.
 文字列 を 画面設定する は 画面
 場所 を 画面設定する とは 雛形内の雛形既定設定 に 場所 を 雛形内の雛形場所設定して 雛形画面設定する
 
-# 自分のフィルターや部品を足した雛形の設定から作る
+# Pages made from settings of 「雛形」 with your own filters or templates added.
 雛形内の雛設定 を 雛形画面設定する は 画面
 設定 を 雛形画面設定する とは 画雛 は 設定 で 画配置 は 「」 の 画面
 
+# The pages with the layout template 名. Every page is put in it, where `{{ 中身 を 生にする }}` is the page.
 画面 に 文字列 を 配置設定する は 画面
 g に 名 を 配置設定する とは 画配置 は 名 の g
 
+# Draws the template 名 with 値 (a JSON value), in the layout. The result is the string, or a failure with the reason.
 文字列 を JSON内のJSON で 画面 に 画面描画する は （文字列 と 文字列） の 成否 の 動作
 名 を 値 で g に 画面描画する とは 以下の手順です
   r とは 名 を 値 で （g の 画雛） に 雛形内の雛形設定読込描画した 結果
@@ -337,6 +312,7 @@ JSON内のJSON に 文字列 を 中身追加する は JSON内のJSON
     ps の JSON内のJSON物 ならば （ps + （項 を 空 に 挿入する）） の JSON内のJSON物
     そうでなければ （項 を 空 に 挿入する） の JSON内のJSON物
 
+# A 200 response with the page 名 drawn with 値. 500 when it cannot be drawn.
 文字列 を JSON内のJSON で 画面 に 画面返答する は HTTP内の応答 の 動作
 名 を 値 で g に 画面返答する とは 以下の手順です
   r とは 名 を 値 で g に 画面描画した 結果
@@ -347,6 +323,7 @@ JSON内のJSON に 文字列 を 中身追加する は JSON内のJSON
 （s の 成功） を 描画返答する とは s を HTML返答する
 （e の 失敗） を 描画返答する とは 500 で 「画面を描けません: 」 + e を 状態返答する
 
+# A response with the status n and the page 名 drawn with 値, such as 422 to show form errors.
 数 と 文字列 を JSON内のJSON で 画面 に 画面状態返答する は HTTP内の応答 の 動作
 n と 名 を 値 で g に 画面状態返答する とは 以下の手順です
   r とは 名 を 値 で g に 画面返答した 結果
@@ -355,33 +332,41 @@ n と 名 を 値 で g に 画面状態返答する とは 以下の手順で�
 
 # --- 本文の JSON ---
 
+# The body of the request as a UTF-8 string.
 文脈 を 本文文字列にする は 文字列
 c を 本文文字列にする とは c の 元要求 の 本文
 
+# The JSON of the request body, or a failure with the reason.
 文脈 を JSON本文解析する は （JSON内のJSON と 文字列） の 成否
 c を JSON本文解析する とは c を 本文文字列にして JSON内のJSON解析する
 
+# The request body turned into a type derived with 【JSON】 by 復元 (such as `会員JSON復元すること`), or a failure with the reason.
 文脈 を （JSON内のJSON を 受け取って （甲 と 文字列） の 成否 を 返すこと） で JSON本文復元する は （甲 と 文字列） の 成否
 c を 復元 で JSON本文復元する とは
   もし （c を JSON本文解析する） が
     v の 成功 ならば 復元 を v に 適用する
     e の 失敗 ならば e の 失敗
 
+# When the result is a success, gives its value to the handler. When it is a failure, answers 400 with the reason.
 （甲 と 文字列） の 成否 を （甲 を 受け取って HTTP内の応答 の 動作 を 返すこと） で 成功時返答する は HTTP内の応答 の 動作
 （x の 成功） を 処理 で 成功時返答する とは 処理 を x に 適用する
 （e の 失敗） を 処理 で 成功時返答する とは 400 で e を 状態返答する
 
 # --- 書式の値を確かめる ---
 
+# A rule for a form field: the field name, whether it is required, and the check (a function that gives 「」 when the value is fine, or the message).
 書式規則 とは 規則欄 は 文字列 で 規則必須 は 真偽 で 規則検査 は （文字列 を 受け取って 文字列 を 返すこと） の 組
+# An error of a form field: the field name and the message.
 書式誤り とは 誤欄 は 文字列 で 誤文 は 文字列 の 組
 
+# A rule that the field 名 is not empty.
 文字列 を 必須検査する は 書式規則
 名 を 必須検査する とは 規則欄 は 名 で 規則必須 は 真 で 規則検査 は （v を 受け取って 名 と v を 必須文にする を 返すこと） の 書式規則
 
 文字列 と 文字列 を 必須文にする は 文字列
 名 と v を 必須文にする とは もし （v を 空白除去する） = 「」 ならば 名 + 「を入れてください」 そうでなければ 「」
 
+# A rule that the field 名 is a number.
 文字列 を 数検査する は 書式規則
 名 を 数検査する とは 規則欄 は 名 で 規則必須 は 偽 で 規則検査 は （v を 受け取って 名 と v を 数文にする を 返すこと） の 書式規則
 
@@ -391,6 +376,7 @@ c を 復元 で JSON本文復元する とは
     n の 成功 ならば 「」
     e の 失敗 ならば 名 + 「は数で入れてください」
 
+# A rule that the field 名 is a number from 下 to 上.
 文字列 を 数 から 数 へ 範囲検査する は 書式規則
 名 を 下 から 上 へ 範囲検査する とは 規則欄 は 名 で 規則必須 は 偽 で 規則検査 は （v を 受け取って 名 と v と 下 と 上 を 範囲文にする を 返すこと） の 書式規則
 
@@ -401,18 +387,21 @@ c を 復元 で JSON本文復元する とは
     n の 成功 ならば もし n < 下 または n > 上 ならば 外 そうでなければ 「」
     e の 失敗 ならば 名 + 「は数で入れてください」
 
+# A rule that the field 名 is at most n characters.
 文字列 を 数 で 最長検査する は 書式規則
 名 を n で 最長検査する とは 規則欄 は 名 で 規則必須 は 偽 で 規則検査 は （v を 受け取って 名 と v と n を 最長文にする を 返すこと） の 書式規則
 
 文字列 と 文字列 と 数 を 最長文にする は 文字列
 名 と v と n を 最長文にする とは もし （v を 文字分解する） の 長さ > n ならば 名 + 「は」 + （n を 文字列化する） + 「字までです」 そうでなければ 「」
 
+# A rule that the field 名 is one of 候補.
 文字列 を 文字列 の リスト で 選択検査する は 書式規則
 名 を 候補 で 選択検査する とは 規則欄 は 名 で 規則必須 は 偽 で 規則検査 は （v を 受け取って 名 と v と 候補 を 選択文にする を 返すこと） の 書式規則
 
 文字列 と 文字列 と 文字列 の リスト を 選択文にする は 文字列
 名 と v と 候補 を 選択文にする とは もし 候補 が v を 含有である ならば 「」 そうでなければ 名 + 「は 」 + （候補 を 「 か 」 で 結合する） + 「 のどれかにしてください」
 
+# The errors of the form fields of the request for the rules (empty when there are none). Except for `必須検査する`, empty values are not checked.
 文脈 を 書式規則 の リスト で 書式検査する は 書式誤り の リスト
 c を 規則群 で 書式検査する とは
   誤り候補 とは 規則群 を （r を 受け取って r を （c から （r の 規則欄） を 書式取得する） で 規則適用する を 返すこと） で 写像する
@@ -423,6 +412,7 @@ r を v で 規則適用する とは
   文 とは もし v = 「」 かつ （r の 規則必須） = 偽 ならば 「」 そうでなければ （r の 規則検査） を v に 適用する
   （誤欄 は （r の 規則欄） で 誤文 は 文 の 書式誤り）
 
+# A JSON object with the first message for each field name, to give to a page.
 書式誤り の リスト を 誤りJSONにする は JSON内のJSON
 誤り群 を 誤りJSONにする とは （誤り群 を 誤り項目追加すること で 空 から 畳み込みする） の JSON内のJSON物
 
@@ -433,6 +423,7 @@ JSON内のJSON項目 の リスト を 書式誤り で 誤り項目追加する
 
 # --- クッキー ---
 
+# The value of the cookie 名 of the request (%XX decoded; 「」 when there is none).
 文脈 から 文字列 を クッキー取得する は 文字列
 c から 名 を クッキー取得する とは （（c の 元要求 の 見出し から 「cookie」 を HTTP内の見出し取得する） を クッキー対群にする） から 名 を 対取得する
 
@@ -457,12 +448,15 @@ b が 素字である とは （b >= 48 かつ b <= 57） または （b >= 65 �
 
 既定属性 とは 「Path=/; HttpOnly; SameSite=Lax」
 
+# The response action with a Set-Cookie for 名 and 値 (Path=/; HttpOnly; SameSite=Lax).
 HTTP内の応答 の 動作 に 文字列 と 文字列 を クッキー付けする は HTTP内の応答 の 動作
 r に 名 と 値 を クッキー付けする とは r に 名 と 値 を 既定属性 で クッキー属性付けする
 
+# The response action with a Set-Cookie for 名 and 値, with the attributes written by you (such as 「Path=/; Max-Age=60」).
 HTTP内の応答 の 動作 に 文字列 と 文字列 を 文字列 で クッキー属性付けする は HTTP内の応答 の 動作
 r に 名 と 値 を 属性 で クッキー属性付けする とは （r の 結果） に 名 と 値 を 属性 で クッキー見出し追加する
 
+# The response action with a Set-Cookie that deletes the cookie 名.
 HTTP内の応答 の 動作 に 文字列 を クッキー消去する は HTTP内の応答 の 動作
 r に 名 を クッキー消去する とは r に 名 と 「」 を 既定属性 + 「; Max-Age=0」 で クッキー属性付けする
 
@@ -471,8 +465,10 @@ HTTP内の応答 に 文字列 と 文字列 を 文字列 で クッキー見�
 
 # --- セッション(署名したクッキー) ---
 
+# The settings of sessions: the signing key and the cookie name.
 セッション設定 とは セ鍵 は バイト列 で セ名 は 文字列 の 組
 
+# Session settings with the signing key 鍵. Use a secret of 32 characters or more, and change it if it leaks.
 文字列 を セッション設定する は セッション設定
 鍵 を セッション設定する とは セ鍵 は （鍵 を バイト列にする） で セ名 は 「屋台」 の セッション設定
 
@@ -505,6 +501,7 @@ s が 設定 で 署名有効である とは
     x の 成功 ならば 真
     e の 失敗 ならば 偽
 
+# The JSON object in the session cookie (an empty object when there is none or the signature does not match).
 文脈 を セッション設定 で セッション取得する は JSON内のJSON
 c を 設定 で セッション取得する とは
   もし （（c から （設定 の セ名） を クッキー取得する） を 設定 で 署名確認する） が
@@ -527,6 +524,7 @@ JSON内のJSON を 物限定する は JSON内のJSON
 （ps の JSON内のJSON物） を 物限定する とは ps の JSON内のJSON物
 v を 物限定する とは 空 の JSON内のJSON物
 
+# The response action with 値 (a JSON object) signed and put in the session cookie.
 HTTP内の応答 の 動作 に JSON内のJSON を セッション設定 で セッション保存する は HTTP内の応答 の 動作
 r に 値 を 設定 で セッション保存する とは r に （設定 の セ名） と （（値 を JSON内のJSON文字列にして バイト列にして Base64符号化する） を 設定 で 署名する） を クッキー付けする
 
@@ -534,9 +532,11 @@ r に 値 を 設定 で セッション保存する とは r に （設定 の 
 
 札名 とは 「屋台札」
 
+# The CSRF token to put in a form as `<input type="hidden" name="_札" value="…">`.
 文脈 を CSRF札取得する は 文字列
 c を CSRF札取得する とは c から 札名 を クッキー取得する
 
+# A wrapper that answers 403 to a POST and so on whose CSRF token does not match. Use it with `中継付けする`.
 セッション設定 で （文脈 を 受け取って HTTP内の応答 の 動作 を 返すこと） を CSRF中継する は （文脈 を 受け取って HTTP内の応答 の 動作 を 返すこと）
 設定 で 処理 を CSRF中継する とは 設定 で 処理 を CSRF実行すること
 
@@ -571,8 +571,10 @@ c を 送札取得する とは
 
 # --- 台帳の資源の道(JSON の API) ---
 
+# A resource for `資源道群にする`: the table (`資表`), the function to JSON (`資化`), the function from JSON (`資戻`) and the action that opens a `DB接続` for each request (`資開`).
 資源 とは 資表 は 台帳内の表定義 で 資化 は （甲 を 受け取って JSON内のJSON を 返すこと） で 資戻 は （JSON内のJSON を 受け取って （甲 と 文字列） の 成否 を 返すこと） で 資開 は 蔵内のDB接続 の 動作 の 組
 
+# The six routes of a JSON API at the path p: GET p (list), POST p (create), and GET, PUT, PATCH and DELETE p/:番号.
 文字列 を 資源 で 資源道群にする は 道筋 の リスト
 p を r で 資源道群にする とは （「GET」 と p と （r で 資源一覧すること） の 道筋） と （「POST」 と p と （r で 資源作成すること） の 道筋） と （「GET」 と 個 と （r で 資源表示すること） の 道筋） と （「PUT」 と 個 と （r で 資源更新すること） の 道筋） と （「PATCH」 と 個 と （r で 資源更新すること） の 道筋） と （「DELETE」 と 個 と （r で 資源削除すること） の 道筋）
 ただし 個 とは （もし p が 「/」 で 末尾一致である ならば p そうでなければ p + 「/」） + 「:番号」

@@ -1,3 +1,6 @@
 出力/
 組.lock
 *.db
+/docs/api/
+/docs/_build/
+__pycache__/
