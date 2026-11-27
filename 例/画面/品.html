@@ -1,5 +1,7 @@
 <h1>{{ 題 }}</h1>
 <form method="post" action="/注文">
 <input type="hidden" name="品" value="{{ 題 }}">
+<label>数 <input name="数" value="{{ 数 }}" size="3"></label>
+{% もし 誤り の 数 ならば %}<p class="誤り">{{ 誤り の 数 }}</p>{% 以上 %}
 <button>注文する</button>
 </form>
