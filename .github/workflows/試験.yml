@@ -49,6 +49,7 @@ jobs:
         run: |
           ~/go/bin/kumu 作る
           ./出力/屋台の例 > "$RUNNER_TEMP/店.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/店.pid"
           for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8080/ && break; sleep 1; done
           curl -sf http://127.0.0.1:8080/ | grep -q いらっしゃいませ
           curl -sf http://127.0.0.1:8080/%E5%93%81/1 | grep -q '<title>たこ焼き - 屋台の店</title>'
@@ -65,3 +66,31 @@ jobs:
           curl -sf http://127.0.0.1:8080/%E9%9D%99%E7%9A%84/%E5%BA%97.css | grep -q sans-serif
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/%E5%93%81/9)" = 404
           cat "$RUNNER_TEMP/店.log"
+      - name: 掲示板の試験と点検
+        working-directory: 例/掲示板
+        run: |
+          ~/go/bin/kumu 試験
+          ~/go/bin/kumu 点検
+      - name: 掲示板が答えるか
+        working-directory: 例/掲示板
+        run: |
+          kill "$(cat "$RUNNER_TEMP/店.pid")" || true
+          sleep 1
+          rm -f 掲示板.db
+          ~/go/bin/kumu 作る
+          ./出力/掲示板 > "$RUNNER_TEMP/板.log" 2>&1 &
+          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8080/ && break; sleep 1; done
+          U=http://127.0.0.1:8080
+          J="$RUNNER_TEMP/板jar"
+          curl -sf -c "$J" -b "$J" $U/ > "$RUNNER_TEMP/板.html"
+          T=$(sed -n 's/.*name="_札" value="\([^"]*\)".*/\1/p' "$RUNNER_TEMP/板.html" | head -1)
+          test -n "$T"
+          P=$U/%E6%8A%95%E7%A8%BF
+          test "$(curl -s -o /dev/null -w '%{http_code}' -b "$J" -X POST --data-urlencode 名前=花子 --data-urlencode 本文=やあ $P)" = 403
+          test "$(curl -s -o /dev/null -w '%{http_code}' -c "$J" -b "$J" -X POST --data-urlencode 名前=花子 --data-urlencode 本文=やあ --data-urlencode "_札=$T" $P)" = 303
+          test "$(curl -s -o /dev/null -w '%{http_code}' -b "$J" -X POST --data-urlencode 名前=花子 --data-urlencode 本文= --data-urlencode "_札=$T" $P)" = 422
+          curl -sf -b "$J" $U/ | grep -q 'value="花子"'
+          curl -sf $U/api/%E6%8A%95%E7%A8%BF | grep -q '"本文":"やあ"'
+          test "$(curl -s -o /dev/null -w '%{http_code}' -b "$J" -X POST --data-urlencode "_札=$T" $P/1/%E5%89%8A%E9%99%A4)" = 303
+          test "$(curl -sf $U/api/%E6%8A%95%E7%A8%BF)" = '[]'
+          cat "$RUNNER_TEMP/板.log"
