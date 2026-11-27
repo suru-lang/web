@@ -1,0 +1,46 @@
+# kumu 試験 と kumu 点検(屋台と例)を Linux と macOS で動かし、例の店を起動して答えるか確かめます
+name: 試験
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: clang を入れる
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang
+      - name: kumu を入れる
+        # GOPROXY=direct: プロキシが古い main を返さないように、GitHub から直接取る
+        run: GOPROXY=direct go install github.com/suru-lang/suru/cmd/kumu@main
+      - name: 試験
+        run: ~/go/bin/kumu 試験
+      - name: 点検
+        run: ~/go/bin/kumu 点検
+      - name: 例の点検
+        working-directory: 例
+        run: ~/go/bin/kumu 点検
+      - name: 例の店が答えるか
+        working-directory: 例
+        run: |
+          ~/go/bin/kumu 作る
+          ./出力/屋台の例 > "$RUNNER_TEMP/店.log" 2>&1 &
+          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8080/ && break; sleep 1; done
+          curl -sf http://127.0.0.1:8080/ | grep -q いらっしゃいませ
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -d '品=a' http://127.0.0.1:8080/%E6%B3%A8%E6%96%87)" = 303
+          curl -sf http://127.0.0.1:8080/%E9%9D%99%E7%9A%84/%E5%BA%97.css | grep -q sans-serif
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/%E5%93%81/9)" = 404
+          cat "$RUNNER_TEMP/店.log"
