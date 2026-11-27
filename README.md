@@ -58,6 +58,11 @@ c を 注文受付する とは 「/ありがとう?品=」 + （c から 「品
 
 A handler is a function that takes a `文脈` (context) and returns an action giving an `HTTP内の応答`. `8080 を 道群 で 屋台開店する` listens on port 8080 and calls the handler of the matching route for each request. The example is [例/店.suru](例/店.suru) (run `kumu 実行` in `例/` and open http://localhost:8080/).
 
+## Examples
+
+- **[例/店.suru](例/店.suru), a small shop.** A menu and order pages made from templates, a form with rules, an order count kept in the session, CSRF tokens, and a JSON API. Run `kumu 実行` in `例/` and open http://localhost:8080/.
+- **[例/掲示板/](例/掲示板/), a bulletin board on SQLite.** Posts are stored with 台帳 in `掲示板.db`. The page lists the 20 newest posts, and a form adds or deletes them. The form is checked with rules and protected by CSRF tokens, and the name you wrote is remembered in the session. `資源 /api/投稿 投稿 帳場接続する` adds a JSON API for the same posts. It is its own project (it depends on SQLite): run `kumu 実行` in `例/掲示板/`, and `kumu 試験` for its tests.
+
 ## Writing routes (【道】)
 
 Under `道群 とは 以下の【道】です`, write one `method pattern handler` per indented line, and close with `以上です`.
@@ -220,13 +225,15 @@ kumu 点検
 cd 結合試験 && kumu 試験   # resource routes with a real SQLite database (needs SQLite)
 ```
 
-CI also builds and starts the shop in `例/` and checks its answers with curl.
+CI also runs the tests of `例/掲示板/`, builds and starts the shop in `例/` and the bulletin board in `例/掲示板/`, and checks their answers with curl.
 
 ## Future work
 
-These are the later stages of the plan (suru-lang/web#1).
+Candidates after v0.1.0:
 
-- Docs, a larger example and the v0.1.0 release
+- Sessions kept on the server (in a database), for data larger than a cookie
+- Resource routes for HTML pages and forms, not only JSON
+- Restarting the server when a source file changes during development
 
 ## License
 

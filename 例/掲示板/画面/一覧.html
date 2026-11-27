@@ -1,0 +1,20 @@
+<h1>{{ 題 }}</h1>
+<p>{{ 件数 }}件の書き込みがあります。</p>
+<form method="post" action="/投稿">
+<input type="hidden" name="_札" value="{{ 札 }}">
+<label>名前 <input name="名前" value="{{ 名前 }}" maxlength="20"></label>
+{% もし 誤り の 名前 ならば %}<p class="誤り">{{ 誤り の 名前 }}</p>{% 以上 %}
+<label>本文 <textarea name="本文" maxlength="200">{{ 本文 }}</textarea></label>
+{% もし 誤り の 本文 ならば %}<p class="誤り">{{ 誤り の 本文 }}</p>{% 以上 %}
+<button>書き込む</button>
+</form>
+<ol class="投稿群">
+{% 投稿群 の それぞれ を 投 として %}<li>
+<p class="名前">{{ 投 の 名前 }}</p>
+<p class="本文">{{ 投 の 本文 }}</p>
+<form method="post" action="/投稿/{{ 投 の 番号 }}/削除">
+<input type="hidden" name="_札" value="{{ 札 }}">
+<button class="消す">消す</button>
+</form>
+</li>
+{% 以上 %}</ol>

@@ -1,0 +1,9 @@
+body { font-family: sans-serif; background: #f7f5f0; color: #222; }
+main { max-width: 40em; margin: 2em auto; padding: 0 1em; }
+form label { display: block; margin: 0.5em 0; }
+textarea { width: 100%; height: 5em; }
+.誤り { color: #b00020; }
+.投稿群 { list-style: none; padding: 0; }
+.投稿群 li { background: #fff; border-radius: 6px; padding: 0.5em 1em; margin: 0.75em 0; }
+.名前 { font-weight: bold; margin: 0; }
+.消す { font-size: 0.8em; }
