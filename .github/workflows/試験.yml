@@ -40,6 +40,7 @@ jobs:
           ./出力/屋台の例 > "$RUNNER_TEMP/店.log" 2>&1 &
           for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8080/ && break; sleep 1; done
           curl -sf http://127.0.0.1:8080/ | grep -q いらっしゃいませ
+          curl -sf http://127.0.0.1:8080/%E5%93%81/1 | grep -q '<title>たこ焼き - 屋台の店</title>'
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -d '品=a' http://127.0.0.1:8080/%E6%B3%A8%E6%96%87)" = 303
           curl -sf http://127.0.0.1:8080/%E9%9D%99%E7%9A%84/%E5%BA%97.css | grep -q sans-serif
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/%E5%93%81/9)" = 404
