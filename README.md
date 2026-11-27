@@ -195,6 +195,32 @@ A record that derives 【表】 and 【JSON】 becomes a JSON API in one line of
 - A missing record or a 番号 that is not an integer of 1 or more gives 404, and a body that cannot be read or does not fit the type gives 400.
 - Without 【道】, write `「/会員」 を （資表 は 会員表 で 資化 は 会員JSON化すること で 資戻 は 会員JSON復元すること で 資開 は （帳場接続する） の 資源） で 資源道群にする`. It gives a list of `道筋`, which can be joined with other routes using `+`.
 
+## Schemas (【スキーマ】)
+
+A type with 【スキーマ】 derived gets its JSON Schema, in the form OpenAPI uses for `components.schemas`. Plan: suru-lang/web#11 (REST APIs like FastAPI).
+
+```
+「屋台」 を 読み込んで 使う
+「JSON」 を 読み込んで 使う
+
+品 とは 番号 は 数 で 名前 は 文字列 で 値段 は 数 の 組
+品 は 【JSON】 と 【スキーマ】 を 導出する
+
+注文 とは 客 は 文字列 で 品群 は 品 の リスト の 組
+注文 は 【JSON】 と 【スキーマ】 を 導出する
+
+（注文スキーマ を JSON文字列にする） を 表示する
+```
+
+```json
+{"type":"object","properties":{"客":{"type":"string"},"品群":{"type":"array","items":{"$ref":"#/components/schemas/品"}}},"required":["客","品群"]}
+```
+
+- `品スキーマ` is the schema (a 「JSON」 value). 数 is `number`, 文字列 is `string`, 真偽 is `boolean`, JSON is `{}` (any value) and `X の リスト` is an `array`.
+- A field of another derived type is a `$ref` to `#/components/schemas/型の名前`, so that type also derives 【スキーマ】.
+- `品スキーマ群` is the list of `スキーマ定義` (the name `定義名` and the schema `定義図`) of the type and of the types it uses, for the components of a spec.
+- A type with two or more forms is a `oneOf` of objects told apart by the item `形`, as 【JSON】 writes it.
+
 ## Decisions
 
 1. **A handler is a function, a route is a record.** A handler takes a `文脈` and returns an action giving an `HTTP内の応答`. `道筋` is a record of the method (`道方法`), the pattern (`道型`) and the handler (`道処理`), defined with field types. There are no configuration files or marks in comments.
@@ -216,6 +242,8 @@ A record that derives 【表】 and 【JSON】 becomes a JSON API in one line of
 17. **A resource opens a connection per request.** `資開` is the action that opens a `DB接続`. Each request runs it, uses the connection and closes it, so the database can be changed while the server runs, and requests in different threads don't share a connection.
 18. **The first column is the primary key, taken from the path.** When creating, the body's primary key is ignored and the database chooses it. When updating, the 番号 in the path is used. PUT and PATCH both replace every column, so the body must have all the fields except the primary key.
 19. **Resource routes are not checked for CSRF by themselves.** They are a JSON API, so leave them out of `CSRF中継する`, or send the token in `X-CSRF-Token`.
+20. **Every field of a schema is required.** 【JSON】 writes every field and needs every field to read a value back, so the schema says so too.
+21. **Types that refer to each other are not supported yet.** A type may use itself (`木 の リスト` in `木`), but two types that use each other make their `スキーマ群` endless.
 
 ## API documentation
 
