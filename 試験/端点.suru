@@ -134,7 +134,7 @@ r を 本文文字列にする とは r の 本文 を 文字列にする
   （（「  GET /品/:番号 は 品取得する」 + 改行 + 「    品 を 返す」） を API展開して 誤り文にする） を 「【API】の1行目: 道の『:番号』を処理の呼び方に書きます」 に 一致確認する
   （（「  GET /品/:番号 は 番号 を 品取得する」 + 改行 + 「    品 を 返す」） を API展開して 誤り文にする） を 「【API】の1行目: 『番号』の型の行がありません(例: 番号 は 数)」 に 一致確認する
   （「  GET /品 は 品一覧する」 を API展開して 誤り文にする） を 「【API】の1行目: 結果の型の行を1つ書きます(例: 品 を 返す、品 を 201 で 返す)」 に 一致確認する
-  （（「  GET /品 は 開始 を 品一覧する」 + 改行 + 「    開始 は 小数」 + 改行 + 「    品 を 返す」） を API展開して 誤り文にする） を 「【API】の2行目: 『開始』の型は 数・文字列・真偽 のどれかです(本文の型は【JSON】を導出した型か JSON)」 に 一致確認する
+  （（「  GET /品 は 開始 を 品一覧する」 + 改行 + 「    開始 は 小数」 + 改行 + 「    品 を 返す」） を API展開して 誤り文にする） を 「【API】の2行目: 『開始』の型は 数・文字列・真偽 のどれかです(本文の型は【JSON】を導出した型か JSON、そのままの要求は 文脈)」 に 一致確認する
   （（「    番号 は 数」 + 改行 + 「  GET /品 は 品一覧する」） を API展開して 誤り文にする） を 「【API】の1行目: 端点の頭の行(例: GET /品/:番号 は 番号 を 品取得する)の前に型の行があります」 に 一致確認する
   （「  依存 接続 は」 を API展開して 誤り文にする） を 「【API】の1行目: 依存は『依存 名前 は 開く動作』と書きます(例: 依存 接続 は 帳場接続する、閉じるなら 依存 接続 は 帳場接続する で 開き DB閉鎖する で 閉じる)」 に 一致確認する
   以上です
@@ -155,7 +155,7 @@ r を 本文文字列にする とは r の 本文 を 文字列にする
 以上です
 
 仕様試験する は 真偽 の 動作
-仕様試験する とは （（挨拶API を 「挨拶の API」 で 「1.0.0」 に API仕様にする） を JSON文字列にする） を 「{"openapi":"3.1.0","info":{"title":"挨拶の API","version":"1.0.0"},"paths":{"/挨拶/{名前}":{"get":{"summary":"挨拶を返します","operationId":"挨拶する","tags":["挨拶","試し"],"parameters":[{"name":"名前","in":"path","required":true,"schema":{"type":"string"}},{"name":"丁寧","in":"query","required":false,"schema":{"type":"boolean"}}],"responses":{"200":{"description":"成功","content":{"application/json":{"schema":{"type":"string"}}}},"422":{"description":"入力の誤り","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}}},"components":{"schemas":{"HTTPValidationError":{"title":"HTTPValidationError","type":"object","properties":{"detail":{"type":"array","items":{"$ref":"#/components/schemas/ValidationError"}}},"required":["detail"]},"ValidationError":{"title":"ValidationError","type":"object","properties":{"loc":{"type":"array","items":{"type":"string"}},"msg":{"type":"string"},"type":{"type":"string"}},"required":["loc","msg","type"]}}}}」 に 一致確認する
+仕様試験する とは （（挨拶API を 「挨拶の API」 で 「1.0.0」 に API仕様にする） を JSON文字列にする） を 「{"openapi":"3.1.0","info":{"title":"挨拶の API","version":"1.0.0"},"paths":{"/挨拶/{名前}":{"get":{"summary":"挨拶を返します","operationId":"挨拶する","tags":["挨拶","試し"],"parameters":[{"name":"名前","in":"path","required":true,"schema":{"type":"string"}},{"name":"丁寧","in":"query","required":false,"schema":{"type":"boolean","default":false}}],"responses":{"200":{"description":"成功","content":{"application/json":{"schema":{"type":"string"}}}},"422":{"description":"入力の誤り","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}}},"components":{"schemas":{"HTTPValidationError":{"title":"HTTPValidationError","type":"object","properties":{"detail":{"type":"array","items":{"$ref":"#/components/schemas/ValidationError"}}},"required":["detail"]},"ValidationError":{"title":"ValidationError","type":"object","properties":{"loc":{"type":"array","items":{"type":"string"}},"msg":{"type":"string"},"type":{"type":"string"}},"required":["loc","msg","type"]}}}}」 に 一致確認する
 
 公開の試験する は 真偽 の 動作
 公開の試験する とは 以下の手順です
@@ -167,4 +167,55 @@ r を 本文文字列にする とは r の 本文 を 文字列にする
   頁 とは 道群 で （「GET」 を 「/docs」 で 要求にする） を 振分した 結果
   （（頁 を 本文文字列にする） が 「SwaggerUIBundle({url: "/openapi.json"」 を 含有である） を 真 に 一致確認する
   （（（「GET」 を 「/品/1」 で 要求にする） を 応答した 結果） の 状態） を 200 に 一致確認する
+  以上です
+
+数 を 文字列 で 文字列 から 文字列 へ 文脈 より 色見本する は （文字列 と API誤り） の 成否 を 返す 入出力動作
+数 を 色 で 鍵 から 合言葉 へ c より 色見本する とは （（数 を 文字列化する） + 「 」 + 色 + 「 」 + 鍵 + 「 」 + 合言葉 + 「 」 + （c を 方法にする）） を API成功する
+
+見本API とは 以下の【API】です
+  GET /見本 は 数 を 色 で 鍵 から 合言葉 へ 要求 より 色見本する
+    数 は 数 で 既定 1 で 1 から 9 まで
+    色 は 文字列 で 候補 赤 青
+    鍵 は 文字列 で 見出し X-API-Key で 最短 3
+    合言葉 は 文字列 で クッキー で 最長 5
+    要求 は 文脈
+    文字列 を 返す
+以上です
+
+文字列 で 文字列 の リスト の リスト を 見出し付き要求にする は HTTP内の要求
+道 で 見出し を 見出し付き要求にする とは 「GET」 と 道 と 見出し と 「」 の HTTP内の要求
+
+文字列 で 文字列 の リスト の リスト を 見本応答する は HTTP内の応答 の 動作
+道 で 見出し を 見本応答する とは （見本API を API道群にする） で （道 で 見出し を 見出し付き要求にする） を 振分する
+
+良い見出し群 とは （「x-api-key」 と 「abcd」） と （「cookie」 と 「a=1; 合言葉=やま」）
+
+制約と見出しの試験する は 真偽 の 動作
+制約と見出しの試験する とは 以下の手順です
+  r とは 「/見本?色=赤」 で 良い見出し群 を 見本応答した 結果
+  r の 状態 を 200 に 一致確認する
+  （r を 本文文字列にする） を 「"1 赤 abcd やま GET"」 に 一致確認する
+  悪 とは 「/見本?数=10&色=緑」 で （（「x-api-key」 と 「ab」） を 空 に 挿入する） を 見本応答した 結果
+  悪 の 状態 を 422 に 一致確認する
+  （悪 を 本文文字列にする） を 「{"detail":[{"loc":["query","数"],"msg":"1 から 9 までの数にします","type":"value_error"},{"loc":["query","色"],"msg":"赤・青 のどれかにします","type":"value_error"},{"loc":["header","X-API-Key"],"msg":"3字以上にします","type":"value_error"},{"loc":["cookie","合言葉"],"msg":"必要です","type":"missing"}]}」 に 一致確認する
+  長い とは 「/見本?色=青」 で （（「x-api-key」 と 「abcd」） と （「cookie」 と 「合言葉=たかいやまのうえ」）） を 見本応答した 結果
+  （長い を 本文文字列にする） を 「{"detail":[{"loc":["cookie","合言葉"],"msg":"5字までにします","type":"value_error"}]}」 に 一致確認する
+  以上です
+
+制約の仕様の試験する は 真偽 の 動作
+制約の仕様の試験する とは 以下の手順です
+  仕様 とは （見本API を 「見本」 で 「1」 に API仕様にする） を JSON文字列にする
+  （仕様 が 「{"name":"数","in":"query","required":false,"schema":{"type":"number","default":1,"minimum":1,"maximum":9}}」 を 含有である） を 真 に 一致確認する
+  （仕様 が 「{"name":"色","in":"query","required":true,"schema":{"type":"string","enum":["赤","青"]}}」 を 含有である） を 真 に 一致確認する
+  （仕様 が 「{"name":"X-API-Key","in":"header","required":true,"schema":{"type":"string","minLength":3}}」 を 含有である） を 真 に 一致確認する
+  （仕様 が 「{"name":"合言葉","in":"cookie","required":true,"schema":{"type":"string","maxLength":5}}」 を 含有である） を 真 に 一致確認する
+  （仕様 が 「"要求"」 を 含有である） を 偽 に 一致確認する
+  以上です
+
+制約の誤り試験する は 真偽 の 動作
+制約の誤り試験する とは 以下の手順です
+  頭 とは 「  GET /見本 は 数 を 見本表示する」 + 改行
+  （（頭 + 「    数 は 文字列 で 1 から 9 まで」 + 改行 + 「    数 を 返す」） を API展開して 誤り文にする） を 「【API】の2行目: 『… から … まで』は 数 の入力に付けます」 に 一致確認する
+  （（頭 + 「    数 は 数 で 最長 3」 + 改行 + 「    数 を 返す」） を API展開して 誤り文にする） を 「【API】の2行目: 『最長』は 文字列 の入力に付けます」 に 一致確認する
+  （（頭 + 「    数 は 数 で 大きい」 + 改行 + 「    数 を 返す」） を API展開して 誤り文にする） を 「【API】の2行目: 『で 大きい』は読めません(使えるのは『で 既定 値』『で 1 から 9 まで』『で 最長 20』『で 最短 1』『で 候補 赤 青』『で 見出し 名前』『で クッキー 名前』です)」 に 一致確認する
   以上です
