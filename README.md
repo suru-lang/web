@@ -269,6 +269,16 @@ db で n を 品取得する とは 以下の手順です
 
 - Write one paragraph per endpoint. The first line is `方法 道 は 処理の呼び方`: the call of the handler as you would write it in する. The indented lines are `名前 は 型` for each input and `型 を 返す` (or `型 を 状態 で 返す`) for the result.
 - Where an input comes from is decided by its name: a `:名前` of the path is a path parameter, `本文` is the JSON body, a name in a `依存` line is a dependency, and any other name is a query parameter. Path and query inputs are 数, 文字列 or 真偽 (`true`/`false`); a query input with `で 既定 値` may be left out. The body is a type derived with 【JSON】, or JSON.
+- After the type, `で …` clauses add to an input: `で 既定 値` (a default), `で 1 から 9 まで` (a range of numbers), `で 最長 20` and `で 最短 1` (the length of a string), `で 候補 赤 青` (one of these strings), `で 見出し 名前` (read from that request header, not the query) and `で クッキー 名前` (read from that cookie). Without a name, the input's own name is used. A value outside its limits is answered with 422 (`"type":"value_error"`), and the limits and defaults appear in the spec (`minimum`, `maxLength`, `enum`, `default` …). `名前 は 文脈` passes the request itself.
+
+```
+  GET /見本 は 数 を 色 で 鍵 から 要求 より 見本表示する
+    数 は 数 で 既定 1 で 1 から 9 まで
+    色 は 文字列 で 候補 赤 青
+    鍵 は 文字列 で 見出し X-API-Key で 最短 3
+    要求 は 文脈
+    文字列 を 返す
+```
 - `依存 名前 は 開く動作` does that action for each request and passes its value; with `で 開き 閉じる関数 で 閉じる` it also calls the function after the response (here closing the connection). Only the dependencies an endpoint uses are opened, after its inputs are checked.
 - The handler returns `（型 と API誤り） の 成否` as an action: end with `x を API成功する`, or `「品がありません」 を 404 で API失敗する`, which is answered with 404 and `{"detail":"品がありません"}`.
 - The result is the value as JSON (a type derived with 【JSON】, 数, 文字列, 真偽, JSON, or `X の リスト`) with status 200, or the status you write. 204 has no body.
@@ -307,6 +317,7 @@ db で n を 品取得する とは 以下の手順です
 25. **Dependencies are opened per request, after the inputs are checked.** A bad request does not open a connection, and a dependency with a closing function is closed after the response is made.
 26. **Schema names are encoded in the spec.** OpenAPI allows only `A-Z a-z 0-9 . -` in the keys of `components.schemas`, so a Japanese type name becomes `_E5_93_81`-style bytes, and `title` keeps the real name for Swagger UI.
 27. **Swagger UI comes from a CDN, pinned to one version.** 屋台 stays small and the page needs the network; `API画面頁にする` takes another place for the files.
+28. **Limits are written in the block, not in the handler.** 屋台 checks them with the types, reports them with the other 422 errors, and puts them in the spec, so the handler only gets values that fit. Header names are compared without case, as HTTP does.
 
 ## API documentation
 
