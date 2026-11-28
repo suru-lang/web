@@ -6,10 +6,10 @@
 「JSON」 を 読み込んで 使う
 
 品 とは 番号 は 数 で 名前 は 文字列 で 値段 は 数 の 組
-品 は 【JSON】 を 導出する
+品 は 【JSON】 と 【スキーマ】 を 導出する
 
 新品 とは 名前 は 文字列 で 値段 は 数 の 組
-新品 は 【JSON】 を 導出する
+新品 は 【JSON】 と 【スキーマ】 を 導出する
 
 品群 とは （番号 は 1 で 名前 は 「たこ焼き」 で 値段 は 500 の 品） と （番号 は 2 で 名前 は 「焼きそば」 で 値段 は 600 の 品）
 
@@ -46,6 +46,8 @@ n を 品削除する とは n を API成功する
     上限 は 数 で 既定 20
     品 の リスト を 返す
   GET /品/:番号 は 店 で 番号 を 品取得する
+    説明 品を1つ返します
+    分類 品
     番号 は 数
     品 を 返す
   POST /品 は 本文 を 品作成する
@@ -141,4 +143,28 @@ r を 本文文字列にする とは r の 本文 を 文字列にする
 資源の行の試験する とは 以下の手順です
   r とは 「  資源 /会員 会員 帳場接続する」 を API展開する
   （r を 誤り文にする） を 「(成功)」 に 一致確認する
+  以上です
+
+挨拶API とは 以下の【API】です
+  GET /挨拶/:名前 は 名前 で 丁寧 を 挨拶する
+    説明 挨拶を返します
+    分類 挨拶 試し
+    名前 は 文字列
+    丁寧 は 真偽 で 既定 偽
+    文字列 を 返す
+以上です
+
+仕様試験する は 真偽 の 動作
+仕様試験する とは （（挨拶API を 「挨拶の API」 で 「1.0.0」 に API仕様にする） を JSON文字列にする） を 「{"openapi":"3.1.0","info":{"title":"挨拶の API","version":"1.0.0"},"paths":{"/挨拶/{名前}":{"get":{"summary":"挨拶を返します","operationId":"挨拶する","tags":["挨拶","試し"],"parameters":[{"name":"名前","in":"path","required":true,"schema":{"type":"string"}},{"name":"丁寧","in":"query","required":false,"schema":{"type":"boolean"}}],"responses":{"200":{"description":"成功","content":{"application/json":{"schema":{"type":"string"}}}},"422":{"description":"入力の誤り","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}}},"components":{"schemas":{"HTTPValidationError":{"title":"HTTPValidationError","type":"object","properties":{"detail":{"type":"array","items":{"$ref":"#/components/schemas/ValidationError"}}},"required":["detail"]},"ValidationError":{"title":"ValidationError","type":"object","properties":{"loc":{"type":"array","items":{"type":"string"}},"msg":{"type":"string"},"type":{"type":"string"}},"required":["loc","msg","type"]}}}}」 に 一致確認する
+
+公開の試験する は 真偽 の 動作
+公開の試験する とは 以下の手順です
+  道群 とは 品API を 「品屋」 で API公開する
+  仕様 とは 道群 で （「GET」 を 「/openapi.json」 で 要求にする） を 振分した 結果
+  仕様 の 状態 を 200 に 一致確認する
+  （（仕様 を 本文文字列にする） が 「"version":"0.1.0"」 を 含有である） を 真 に 一致確認する
+  （（仕様 を 本文文字列にする） が 「"#/components/schemas/_E5_93_81"」 を 含有である） を 真 に 一致確認する
+  頁 とは 道群 で （「GET」 を 「/docs」 で 要求にする） を 振分した 結果
+  （（頁 を 本文文字列にする） が 「SwaggerUIBundle({url: "/openapi.json"」 を 含有である） を 真 に 一致確認する
+  （（（「GET」 を 「/品/1」 で 要求にする） を 応答した 結果） の 状態） を 200 に 一致確認する
   以上です
