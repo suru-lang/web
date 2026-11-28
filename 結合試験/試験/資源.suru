@@ -10,7 +10,7 @@
 
 会員 とは 番号 は 数 で 名前 は 文字列 で 年齢 は 数 の 組
 
-会員 は 【表】 と 【JSON】 を 導出する
+会員 は 【表】 と 【JSON】 と 【スキーマ】 を 導出する
 
 帳場接続する は DB接続 の 動作
 帳場接続する とは 「資源試験.db」 を SQLite駆動 で DB開封する
@@ -54,4 +54,21 @@ r を 本文文字列にする とは r の 本文 を 文字列にする
   （（「GET」 を 「/会員/1」 で 「」 に 送信した 結果） の 状態） を 404 に 一致確認する
   （（「GET」 を 「/会員/x」 で 「」 に 送信した 結果） の 状態） を 404 に 一致確認する
   （（「GET」 を 「/ping」 で 「」 に 送信した 結果） を 本文文字列にする） を 「GET」 に 一致確認する
+  以上です
+
+会員API とは 以下の【API】です
+  資源 /会員   会員 帳場接続する
+以上です
+
+資源の仕様の試験する は 真偽 の 動作
+資源の仕様の試験する とは 以下の手順です
+  仕様 とは （会員API を 「会員」 で 「1」 に API仕様にする） を JSON文字列にする
+  （仕様 が 「"/会員":{"get":{"summary":"会員一覧","operationId":"会員一覧","tags":["会員"],"parameters":[{"name":"開始","in":"query","required":false,"schema":{"type":"number"}},{"name":"上限","in":"query","required":false,"schema":{"type":"number"}}],"responses":{"200":{"description":"成功","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/_E4_BC_9A_E5_93_A1"}}}}}}}」 を 含有である） を 真 に 一致確認する
+  （仕様 が 「"/会員/{番号}":{"get":」 を 含有である） を 真 に 一致確認する
+  （仕様 が 「"operationId":"会員部分更新"」 を 含有である） を 真 に 一致確認する
+  （仕様 が 「"404":{"description":"誤り","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPError"}}}}」 を 含有である） を 真 に 一致確認する
+  （仕様 が 「"201":{"description":"成功"」 を 含有である） を 真 に 一致確認する
+  （仕様 が 「"204":{"description":"成功"}」 を 含有である） を 真 に 一致確認する
+  （仕様 が 「"422"」 を 含有である） を 偽 に 一致確認する
+  （（（「GET」 と 「/会員/x」 と 空 と 「」 の HTTP内の要求） を （会員API を API道群にする） で 振分した 結果） の 状態） を 404 に 一致確認する
   以上です

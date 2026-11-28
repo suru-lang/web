@@ -1,4 +1,4 @@
-# kumu 試験 と kumu 点検(屋台・結合試験・例)を Linux と macOS で動かし、例の店を起動して答えるか確かめます
+# kumu 試験 と kumu 点検(屋台・結合試験・例)を Linux と macOS で動かし、例の店・掲示板・品屋API を起動して答えるか確かめ、API の仕様を OpenAPI の検証器で確かめます
 name: 試験
 
 on:
@@ -93,4 +93,33 @@ jobs:
           curl -sf $U/api/%E6%8A%95%E7%A8%BF | grep -q '"本文":"やあ"'
           test "$(curl -s -o /dev/null -w '%{http_code}' -b "$J" -X POST --data-urlencode "_札=$T" $P/1/%E5%89%8A%E9%99%A4)" = 303
           test "$(curl -sf $U/api/%E6%8A%95%E7%A8%BF)" = '[]'
+          curl -sf $U/openapi.json > "$RUNNER_TEMP/板.json"
           cat "$RUNNER_TEMP/板.log"
+          kill $! || true
+      - name: 品屋API の試験と点検
+        working-directory: 例/品屋API
+        run: |
+          ~/go/bin/kumu 試験
+          ~/go/bin/kumu 点検
+      - name: 品屋API が答えるか
+        working-directory: 例/品屋API
+        run: |
+          rm -f 品屋.db
+          ~/go/bin/kumu 作る
+          ./出力/品屋 > "$RUNNER_TEMP/品屋.log" 2>&1 &
+          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8081/openapi.json && break; sleep 1; done
+          U=http://127.0.0.1:8081
+          P=$U/%E5%93%81
+          test "$(curl -sf -X POST -d '{"名前":"たこ焼き","値段":500}' $P)" = '{"番号":1,"名前":"たこ焼き","値段":500}'
+          test "$(curl -sf $P/1)" = '{"番号":1,"名前":"たこ焼き","値段":500}'
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$P?%E4%B8%8A%E9%99%90=0")" = 422
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE $P/1)" = 204
+          test "$(curl -s -o /dev/null -w '%{http_code}' $P/1)" = 404
+          curl -sf $U/docs | grep -q SwaggerUIBundle
+          curl -sf $U/openapi.json > "$RUNNER_TEMP/品屋.json"
+          cat "$RUNNER_TEMP/品屋.log"
+      - name: 仕様を OpenAPI の検証器で確かめる
+        run: |
+          python3 -m venv "$RUNNER_TEMP/v"
+          "$RUNNER_TEMP/v/bin/pip" install -q openapi-spec-validator
+          "$RUNNER_TEMP/v/bin/openapi-spec-validator" "$RUNNER_TEMP/板.json" "$RUNNER_TEMP/品屋.json"

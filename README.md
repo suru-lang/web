@@ -61,7 +61,8 @@ A handler is a function that takes a `文脈` (context) and returns an action gi
 ## Examples
 
 - **[例/店.suru](例/店.suru), a small shop.** A menu and order pages made from templates, a form with rules, an order count kept in the session, CSRF tokens, and a JSON API. Run `kumu 実行` in `例/` and open http://localhost:8080/.
-- **[例/掲示板/](例/掲示板/), a bulletin board on SQLite.** Posts are stored with 台帳 in `掲示板.db`. The page lists the 20 newest posts, and a form adds or deletes them. The form is checked with rules and protected by CSRF tokens, and the name you wrote is remembered in the session. `資源 /api/投稿 投稿 帳場接続する` adds a JSON API for the same posts. It is its own project (it depends on SQLite): run `kumu 実行` in `例/掲示板/`, and `kumu 試験` for its tests.
+- **[例/掲示板/](例/掲示板/), a bulletin board on SQLite.** Posts are stored with 台帳 in `掲示板.db`. The page lists the 20 newest posts, and a form adds or deletes them. The form is checked with rules and protected by CSRF tokens, and the name you wrote is remembered in the session. `資源 /api/投稿 投稿 帳場接続する` in an 【API】 block adds a JSON API for the same posts, with its spec at `/openapi.json` and Swagger UI at `/docs`. It is its own project (it depends on SQLite): run `kumu 実行` in `例/掲示板/`, and `kumu 試験` for its tests.
+- **[例/品屋API/](例/品屋API/), a REST API without the ORM.** Items in SQLite (`品屋.db`), written with plain SQL: list (the query in a record, with limits), get, create, update and delete, each with a summary and a tag. Run `kumu 実行` in `例/品屋API/` and open http://localhost:8081/docs.
 
 ## Writing routes (【道】)
 
@@ -295,7 +296,7 @@ db で n を 品取得する とは 以下の手順です
 - `説明 文` and `分類 名前 …` lines in a paragraph give the endpoint's summary and tags in the spec.
 - `a を 題 で API公開する` gives the routes plus `GET /openapi.json` (the OpenAPI 3.1 spec, version 0.1.0) and `GET /docs` (Swagger UI). `a を 題 で 版 に API版公開する` sets the version. The types of bodies and results also derive 【スキーマ】 for the spec.
 - `a を 題 で 版 に API仕様にする` is the spec as a 「JSON」 value, and `題 を 仕様道 で 元 に API画面頁にする` is the HTML of a Swagger UI page. Swagger UI is loaded from a CDN (`Swagger元`); to load it from elsewhere, make your own `/docs` route with `API画面頁にする`.
-- A `資源` line works inside 【API】 too (it is not in the spec yet). `a を API道群にする` gives only the routes, which join other routes with `+`.
+- A `資源` line works inside 【API】 too, and its six endpoints appear in the spec (tagged with the type's name, 400 and 404 as `{"detail": …}`); the type also derives 【スキーマ】. `a を API道群にする` gives only the routes, which join other routes with `+`.
 
 ## Decisions
 
@@ -328,6 +329,7 @@ db で n を 品取得する とは 以下の手順です
 27. **Swagger UI comes from a CDN, pinned to one version.** 屋台 stays small and the page needs the network; `API画面頁にする` takes another place for the files.
 28. **Limits are written in the block, not in the handler.** 屋台 checks them with the types, reports them with the other 422 errors, and puts them in the spec, so the handler only gets values that fit. Header names are compared without case, as HTTP does.
 29. **Many inputs go into a record, not into more particles.** A function has only six particles, and past two or three their meaning no longer fits; a record reads its fields by name. Taking inputs as arguments stays the main form, because する applies arguments by particle and partial application keeps working.
+30. **The spec of a 資源 line lists its errors, not 422.** Resource routes answer a body that does not fit with 400 and a missing row with 404, both as `{"detail": …}` (the `HTTPError` schema), so the spec says that instead of the 422 of 【API】 endpoints.
 
 ## API documentation
 
@@ -348,7 +350,7 @@ kumu 点検
 cd 結合試験 && kumu 試験   # resource routes and 【API】 with a real SQLite database (needs SQLite)
 ```
 
-CI also runs the tests of `例/掲示板/`, builds and starts the shop in `例/` and the bulletin board in `例/掲示板/`, and checks their answers with curl.
+CI also runs the tests of `例/掲示板/`, builds and starts the shop in `例/`, the bulletin board in `例/掲示板/` and the API in `例/品屋API/`, checks their answers with curl, and checks the specs of the two APIs with `openapi-spec-validator`.
 
 ## Future work
 
