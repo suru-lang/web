@@ -221,6 +221,59 @@ A type with 【スキーマ】 derived gets its JSON Schema, in the form OpenAPI
 - `品スキーマ群` is the list of `スキーマ定義` (the name `定義名` and the schema `定義図`) of the type and of the types it uses, for the components of a spec.
 - A type with two or more forms is a `oneOf` of objects told apart by the item `形`, as 【JSON】 writes it.
 
+## REST APIs (【API】)
+
+With 【API】, a handler is an ordinary function over typed values, not over `文脈`. 屋台 reads and checks the path, query and JSON body from the types you write, calls the handler and answers with JSON, like FastAPI. The handler can use SQL by hand (here with 蔵), the ORM, or no database at all. Plan: suru-lang/web#11.
+
+```
+「屋台」 を 読み込んで 使う
+「JSON」 を 読み込んで 使う
+「蔵」 を 読み込んで 使う
+「SQLite」 を 読み込んで 使う
+
+品 とは 番号 は 数 で 名前 は 文字列 で 値段 は 数 の 組
+品 は 【JSON】 を 導出する
+
+新品 とは 名前 は 文字列 で 値段 は 数 の 組
+新品 は 【JSON】 を 導出する
+
+帳場接続する は DB接続 を 返す 入出力動作
+帳場接続する とは 「店.db」 を SQLite駆動 で DB開封する
+
+DB接続 で 数 を 品取得する は （品 と API誤り） の 成否 を 返す 入出力動作
+db で n を 品取得する とは 以下の手順です
+  行群 とは db に 「SELECT 番号, 名前, 値段 FROM 品 WHERE 番号 = ?」 を （（n の DB数） を 空 に 挿入する） で DB差込問合した 結果
+  もし 行群 = 空 ならば 「品がありません」 を 404 で API失敗する
+  そうでなければ （行群 の 先頭） を 品にして API成功する
+  以上です
+
+品API とは 以下の【API】です
+  依存 接続 は 帳場接続する で 開き DB閉鎖する で 閉じる
+  GET /品/:番号 は 接続 で 番号 を 品取得する
+    番号 は 数
+    品 を 返す
+  GET /品 は 接続 で 開始 から 上限 を 品一覧する
+    開始 は 数 で 既定 0
+    上限 は 数 で 既定 20
+    品 の リスト を 返す
+  POST /品 は 接続 で 本文 を 品作成する
+    本文 は 新品
+    品 を 201 で 返す
+以上です
+
+8080 を （品API を API道群にする） で 屋台開店する
+```
+
+`品にする`, `品一覧する` and `品作成する` are your own functions like `品取得する`; the whole program, tested with a real SQLite, is [結合試験/試験/品屋API.suru](結合試験/試験/品屋API.suru).
+
+- Write one paragraph per endpoint. The first line is `方法 道 は 処理の呼び方`: the call of the handler as you would write it in する. The indented lines are `名前 は 型` for each input and `型 を 返す` (or `型 を 状態 で 返す`) for the result.
+- Where an input comes from is decided by its name: a `:名前` of the path is a path parameter, `本文` is the JSON body, a name in a `依存` line is a dependency, and any other name is a query parameter. Path and query inputs are 数, 文字列 or 真偽 (`true`/`false`); a query input with `で 既定 値` may be left out. The body is a type derived with 【JSON】, or JSON.
+- `依存 名前 は 開く動作` does that action for each request and passes its value; with `で 開き 閉じる関数 で 閉じる` it also calls the function after the response (here closing the connection). Only the dependencies an endpoint uses are opened, after its inputs are checked.
+- The handler returns `（型 と API誤り） の 成否` as an action: end with `x を API成功する`, or `「品がありません」 を 404 で API失敗する`, which is answered with 404 and `{"detail":"品がありません"}`.
+- The result is the value as JSON (a type derived with 【JSON】, 数, 文字列, 真偽, JSON, or `X の リスト`) with status 200, or the status you write. 204 has no body.
+- Inputs that do not fit their types are answered with 422 before the handler runs, with every error in the form FastAPI uses: `{"detail":[{"loc":["query","開始"],"msg":"数ではありません: x","type":"float_parsing"}]}`.
+- A `資源` line works inside 【API】 too. `a を API道群にする` gives the routes, which join other routes with `+`.
+
 ## Decisions
 
 1. **A handler is a function, a route is a record.** A handler takes a `文脈` and returns an action giving an `HTTP内の応答`. `道筋` is a record of the method (`道方法`), the pattern (`道型`) and the handler (`道処理`), defined with field types. There are no configuration files or marks in comments.
@@ -244,6 +297,10 @@ A type with 【スキーマ】 derived gets its JSON Schema, in the form OpenAPI
 19. **Resource routes are not checked for CSRF by themselves.** They are a JSON API, so leave them out of `CSRF中継する`, or send the token in `X-CSRF-Token`.
 20. **Every field of a schema is required.** 【JSON】 writes every field and needs every field to read a value back, so the schema says so too.
 21. **Types that refer to each other are not supported yet.** A type may use itself (`木 の リスト` in `木`), but two types that use each other make their `スキーマ群` endless.
+22. **An API handler takes typed values.** Where each input comes from is decided by its name and its type is written in the block, so the handler needs no `文脈` and no reading code. There are no annotations or reflection: 【API】 writes ordinary する code.
+23. **The written types are checked against the handler.** The call 【API】 writes goes through the type checker, so a block that says `番号 は 数` for a handler that takes a 文字列 is an error before the program runs.
+24. **Every input is checked before the handler.** All errors are answered together with 422, in FastAPI's form (`detail`, `loc`, `msg`, `type`) with Japanese messages, so existing clients and tools can read them. `成功時返答する` keeps 400.
+25. **Dependencies are opened per request, after the inputs are checked.** A bad request does not open a connection, and a dependency with a closing function is closed after the response is made.
 
 ## API documentation
 
@@ -261,7 +318,7 @@ pip install -r docs/requirements.txt && sphinx-build docs docs/_build   # HTML i
 ```sh
 kumu 試験     # routing, context, responses, middleware, 【道】, pages, JSON bodies, forms, cookies, sessions, CSRF (no server)
 kumu 点検
-cd 結合試験 && kumu 試験   # resource routes with a real SQLite database (needs SQLite)
+cd 結合試験 && kumu 試験   # resource routes and 【API】 with a real SQLite database (needs SQLite)
 ```
 
 CI also runs the tests of `例/掲示板/`, builds and starts the shop in `例/` and the bulletin board in `例/掲示板/`, and checks their answers with curl.
