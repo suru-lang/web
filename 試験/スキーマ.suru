@@ -24,7 +24,7 @@ d を 定義名取得する とは d の 定義名
 
 リストと参照の試験する は 真偽 の 動作
 リストと参照の試験する とは 以下の手順です
-  （注文スキーマ を JSON文字列にする） を 「{"type":"object","properties":{"客":{"type":"string"},"品群":{"type":"array","items":{"$ref":"#/components/schemas/品"}},"付記":{}},"required":["客","品群","付記"]}」 に 一致確認する
+  （注文スキーマ を JSON文字列にする） を 「{"type":"object","properties":{"客":{"type":"string"},"品群":{"type":"array","items":{"$ref":"#/components/schemas/_E5_93_81"}},"付記":{}},"required":["客","品群","付記"]}」 に 一致確認する
   （注文スキーマ群 を 定義名取得すること で 写像する） を （「注文」 と 「品」） に 一致確認する
   以上です
 
@@ -33,6 +33,6 @@ d を 定義名取得する とは d の 定義名
 
 自分を使う型の試験する は 真偽 の 動作
 自分を使う型の試験する とは 以下の手順です
-  （木スキーマ を JSON文字列にする） を 「{"type":"object","properties":{"値":{"type":"number"},"子群":{"type":"array","items":{"$ref":"#/components/schemas/木"}}},"required":["値","子群"]}」 に 一致確認する
+  （木スキーマ を JSON文字列にする） を 「{"type":"object","properties":{"値":{"type":"number"},"子群":{"type":"array","items":{"$ref":"#/components/schemas/_E6_9C_A8"}}},"required":["値","子群"]}」 に 一致確認する
   （木スキーマ群 を 定義名取得すること で 写像する） を （「木」 を 空 に 挿入する） に 一致確認する
   以上です

@@ -213,11 +213,11 @@ A type with 【スキーマ】 derived gets its JSON Schema, in the form OpenAPI
 ```
 
 ```json
-{"type":"object","properties":{"客":{"type":"string"},"品群":{"type":"array","items":{"$ref":"#/components/schemas/品"}}},"required":["客","品群"]}
+{"type":"object","properties":{"客":{"type":"string"},"品群":{"type":"array","items":{"$ref":"#/components/schemas/_E5_93_81"}}},"required":["客","品群"]}
 ```
 
 - `品スキーマ` is the schema (a 「JSON」 value). 数 is `number`, 文字列 is `string`, 真偽 is `boolean`, JSON is `{}` (any value) and `X の リスト` is an `array`.
-- A field of another derived type is a `$ref` to `#/components/schemas/型の名前`, so that type also derives 【スキーマ】.
+- A field of another derived type is a `$ref` to `#/components/schemas/…`, so that type also derives 【スキーマ】. OpenAPI allows only ASCII letters, digits, `.` and `-` in these keys, so other bytes of the name are written as `_` and two hex digits (品 → `_E5_93_81`); the spec shows the name itself as `title`.
 - `品スキーマ群` is the list of `スキーマ定義` (the name `定義名` and the schema `定義図`) of the type and of the types it uses, for the components of a spec.
 - A type with two or more forms is a `oneOf` of objects told apart by the item `形`, as 【JSON】 writes it.
 
@@ -232,10 +232,10 @@ With 【API】, a handler is an ordinary function over typed values, not over `�
 「SQLite」 を 読み込んで 使う
 
 品 とは 番号 は 数 で 名前 は 文字列 で 値段 は 数 の 組
-品 は 【JSON】 を 導出する
+品 は 【JSON】 と 【スキーマ】 を 導出する
 
 新品 とは 名前 は 文字列 で 値段 は 数 の 組
-新品 は 【JSON】 を 導出する
+新品 は 【JSON】 と 【スキーマ】 を 導出する
 
 帳場接続する は DB接続 を 返す 入出力動作
 帳場接続する とは 「店.db」 を SQLite駆動 で DB開封する
@@ -250,6 +250,7 @@ db で n を 品取得する とは 以下の手順です
 品API とは 以下の【API】です
   依存 接続 は 帳場接続する で 開き DB閉鎖する で 閉じる
   GET /品/:番号 は 接続 で 番号 を 品取得する
+    説明 品を1つ返します
     番号 は 数
     品 を 返す
   GET /品 は 接続 で 開始 から 上限 を 品一覧する
@@ -261,7 +262,7 @@ db で n を 品取得する とは 以下の手順です
     品 を 201 で 返す
 以上です
 
-8080 を （品API を API道群にする） で 屋台開店する
+8080 を （品API を 「品屋の API」 で API公開する） で 屋台開店する
 ```
 
 `品にする`, `品一覧する` and `品作成する` are your own functions like `品取得する`; the whole program, tested with a real SQLite, is [結合試験/試験/品屋API.suru](結合試験/試験/品屋API.suru).
@@ -272,7 +273,10 @@ db で n を 品取得する とは 以下の手順です
 - The handler returns `（型 と API誤り） の 成否` as an action: end with `x を API成功する`, or `「品がありません」 を 404 で API失敗する`, which is answered with 404 and `{"detail":"品がありません"}`.
 - The result is the value as JSON (a type derived with 【JSON】, 数, 文字列, 真偽, JSON, or `X の リスト`) with status 200, or the status you write. 204 has no body.
 - Inputs that do not fit their types are answered with 422 before the handler runs, with every error in the form FastAPI uses: `{"detail":[{"loc":["query","開始"],"msg":"数ではありません: x","type":"float_parsing"}]}`.
-- A `資源` line works inside 【API】 too. `a を API道群にする` gives the routes, which join other routes with `+`.
+- `説明 文` and `分類 名前 …` lines in a paragraph give the endpoint's summary and tags in the spec.
+- `a を 題 で API公開する` gives the routes plus `GET /openapi.json` (the OpenAPI 3.1 spec, version 0.1.0) and `GET /docs` (Swagger UI). `a を 題 で 版 に API版公開する` sets the version. The types of bodies and results also derive 【スキーマ】 for the spec.
+- `a を 題 で 版 に API仕様にする` is the spec as a 「JSON」 value, and `題 を 仕様道 で 元 に API画面頁にする` is the HTML of a Swagger UI page. Swagger UI is loaded from a CDN (`Swagger元`); to load it from elsewhere, make your own `/docs` route with `API画面頁にする`.
+- A `資源` line works inside 【API】 too (it is not in the spec yet). `a を API道群にする` gives only the routes, which join other routes with `+`.
 
 ## Decisions
 
@@ -301,6 +305,8 @@ db で n を 品取得する とは 以下の手順です
 23. **The written types are checked against the handler.** The call 【API】 writes goes through the type checker, so a block that says `番号 は 数` for a handler that takes a 文字列 is an error before the program runs.
 24. **Every input is checked before the handler.** All errors are answered together with 422, in FastAPI's form (`detail`, `loc`, `msg`, `type`) with Japanese messages, so existing clients and tools can read them. `成功時返答する` keeps 400.
 25. **Dependencies are opened per request, after the inputs are checked.** A bad request does not open a connection, and a dependency with a closing function is closed after the response is made.
+26. **Schema names are encoded in the spec.** OpenAPI allows only `A-Z a-z 0-9 . -` in the keys of `components.schemas`, so a Japanese type name becomes `_E5_93_81`-style bytes, and `title` keeps the real name for Swagger UI.
+27. **Swagger UI comes from a CDN, pinned to one version.** 屋台 stays small and the page needs the network; `API画面頁にする` takes another place for the files.
 
 ## API documentation
 
