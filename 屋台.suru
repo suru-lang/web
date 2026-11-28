@@ -26,7 +26,7 @@
 #
 # **Schemas.** `品 は 【スキーマ】 を 導出する` makes `品スキーマ`, the JSON Schema of 品 (a field of another derived type is a `$ref` to `#/components/schemas/…`), and `品スキーマ群`, the named schemas of 品 and the types it uses, for an OpenAPI spec.
 #
-# **REST APIs.** 【API】 makes routes from paragraphs like `GET /品/:番号 は 接続 で 番号 を 品取得する` with the types of the inputs (`番号 は 数`) and of the result (`品 を 返す`). The handler takes typed values and ends with `API成功する` or `API失敗する`; inputs that do not fit are answered with 422 as FastAPI does. `API公開する` adds `/openapi.json` (OpenAPI 3.1) and `/docs` (Swagger UI).
+# **REST APIs.** 【API】 makes routes from paragraphs like `GET /品/:番号 は 接続 で 番号 を 品取得する` with the types of the inputs (`番号 は 数`) and of the result (`品 を 返す`). The handler takes typed values and ends with `API成功する` or `API失敗する`; inputs that do not fit are answered with 422 as FastAPI does. Inputs come from the path, the query, headers, cookies or the JSON body, with defaults and limits (`開始 は 数 で 既定 0 で 0 から 1000 まで`); many query inputs can go into one record (`条件 は 品条件 の 組` with the fields indented under it). A `資源` line works there too. `API公開する` adds `/openapi.json` (OpenAPI 3.1) and `/docs` (Swagger UI).
 
 「標準」 を 読み込んで 使う
 「HTTP」 を 読み込む

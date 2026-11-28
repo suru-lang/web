@@ -1,3 +1,3 @@
 名前 とは 「屋台」
-版 とは 「0.1.0」
+版 とは 「0.2.0」
 依存 とは 「github.com/suru-lang/http@0.7.0」 と 「github.com/suru-lang/template@0.2.0」 と 「github.com/suru-lang/orm@0.2.0」
