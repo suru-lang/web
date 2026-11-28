@@ -272,13 +272,22 @@ db で n を 品取得する とは 以下の手順です
 - After the type, `で …` clauses add to an input: `で 既定 値` (a default), `で 1 から 9 まで` (a range of numbers), `で 最長 20` and `で 最短 1` (the length of a string), `で 候補 赤 青` (one of these strings), `で 見出し 名前` (read from that request header, not the query) and `で クッキー 名前` (read from that cookie). Without a name, the input's own name is used. A value outside its limits is answered with 422 (`"type":"value_error"`), and the limits and defaults appear in the spec (`minimum`, `maxLength`, `enum`, `default` …). `名前 は 文脈` passes the request itself.
 
 ```
-  GET /見本 は 数 を 色 で 鍵 から 要求 より 見本表示する
-    数 は 数 で 既定 1 で 1 から 9 まで
-    色 は 文字列 で 候補 赤 青
-    鍵 は 文字列 で 見出し X-API-Key で 最短 3
+見本条件 とは 数 は 数 で 色 は 文字列 で 鍵 は 文字列 の 組
+
+見本API とは 以下の【API】です
+  GET /見本 は 条件 を 要求 で 見本表示する
+    条件 は 見本条件 の 組
+      数 は 数 で 既定 1 で 1 から 9 まで
+      色 は 文字列 で 候補 赤 青
+      鍵 は 文字列 で 見出し X-API-Key で 最短 3
     要求 は 文脈
     文字列 を 返す
+以上です
+
+見本条件 を 文脈 で 見本表示する は （文字列 と API誤り） の 成否 を 返す 入出力動作
+条件 を 要求 で 見本表示する とは （条件 の 色） を API成功する
 ```
+- When there are many inputs, `名前 は 組の型 の 組` gathers them into one record: the lines indented under it are its fields, written like other inputs (from the query, a header or a cookie, with the same clauses). The handler gets one value and reads `条件 の 色`; dependencies stay as their own arguments, so partial application such as `店 で 見本表示すること` still works. The fields must match the record type, or the type check fails. In the spec, the fields are parameters of their own.
 - `依存 名前 は 開く動作` does that action for each request and passes its value; with `で 開き 閉じる関数 で 閉じる` it also calls the function after the response (here closing the connection). Only the dependencies an endpoint uses are opened, after its inputs are checked.
 - The handler returns `（型 と API誤り） の 成否` as an action: end with `x を API成功する`, or `「品がありません」 を 404 で API失敗する`, which is answered with 404 and `{"detail":"品がありません"}`.
 - The result is the value as JSON (a type derived with 【JSON】, 数, 文字列, 真偽, JSON, or `X の リスト`) with status 200, or the status you write. 204 has no body.
@@ -318,6 +327,7 @@ db で n を 品取得する とは 以下の手順です
 26. **Schema names are encoded in the spec.** OpenAPI allows only `A-Z a-z 0-9 . -` in the keys of `components.schemas`, so a Japanese type name becomes `_E5_93_81`-style bytes, and `title` keeps the real name for Swagger UI.
 27. **Swagger UI comes from a CDN, pinned to one version.** 屋台 stays small and the page needs the network; `API画面頁にする` takes another place for the files.
 28. **Limits are written in the block, not in the handler.** 屋台 checks them with the types, reports them with the other 422 errors, and puts them in the spec, so the handler only gets values that fit. Header names are compared without case, as HTTP does.
+29. **Many inputs go into a record, not into more particles.** A function has only six particles, and past two or three their meaning no longer fits; a record reads its fields by name. Taking inputs as arguments stays the main form, because する applies arguments by particle and partial application keeps working.
 
 ## API documentation
 
